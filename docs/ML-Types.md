@@ -93,24 +93,9 @@ Examples from the diagram: game playing (e.g. AlphaGo), robotics, and self-drivi
 
 ## How this fits the ML development lifecycle
 
-The following diagram is **not** another “type” of learning; it shows **stages** teams follow when building ML systems (sometimes called **MLDLC** — machine learning development lifecycle).
+The four paradigms above describe **how models learn**. Shipping real systems also follows a **development lifecycle**: framing the problem, data work, modeling, deployment, and iteration (often called **MLDLC**). That is a separate axis from supervised vs reinforcement learning.
 
-![Machine learning development lifecycle (MLDLC)](../assets/mldlc_flowchart.svg)
-
-Briefly, the eight stages are:
-
-1. **Frame the problem** — goals, budget, team, success metrics.
-2. **Gather data** — APIs, scraping, surveys, databases.
-3. **Data preprocessing** — cleaning, missing values, encoding.
-4. **Exploratory data analysis (EDA)** — visuals, correlations, hypotheses.
-5. **Feature engineering and selection** — build and choose informative inputs.
-6. **Model training and evaluation** — train, tune hyperparameters, compare models.
-7. **Deployment and beta testing** — ship to production or pilots, collect feedback.
-8. **Optimize and retrain** — reliability (e.g. load balancing, backups), then loop back as data and needs drift.
-
-The dashed **continuous improvement** arrow reminds you that production feedback often sends you back toward reframing, data, or modeling — whichever stage needs attention.
-
-**Legend (colors):** Business → Data → Features → Modelling → Production — a rough grouping of which “layer” each stage emphasizes.
+For the full flowchart (**`mldlc_flowchart.svg`**) and a stage-by-stage walkthrough, see **[ML development lifecycle](ML-Development-Lifecycle.md)**.
 
 ---
 
@@ -123,6 +108,6 @@ The dashed **continuous improvement** arrow reminds you that production feedback
 | `assets/ml_unsupervised.svg` | Four unsupervised families + examples |
 | `assets/ml_semi_supervised.svg` | Small labeled + large unlabeled + use cases |
 | `assets/ml_reinforcement.svg` | Agent / environment / reward + examples |
-| `assets/mldlc_flowchart.svg` | End-to-end ML project lifecycle |
+| `assets/mldlc_flowchart.svg` | End-to-end ML project lifecycle — see [ML-Development-Lifecycle.md](ML-Development-Lifecycle.md) |
 
 Use this page together with the SVGs: read a section, open the matching diagram, then revisit the bullets to reinforce vocabulary.
