@@ -38,6 +38,11 @@ Two classic splits:
 
 **How to think about it:** you have \((x_i, y_i)\) pairs; training minimizes error between predicted \(\hat{y}_i\) and true \(y_i\) using a loss suited to regression (numeric distance) or classification (wrong-class penalty). Rough mnemonic: regression → **how much / how many** (a quantity); classification → **which one** (a category).
 
+### Example algorithms (supervised)
+
+- **Regression:** linear / ridge / lasso regression, polynomial regression, regression trees, **random forest** and **gradient-boosted** regressors (e.g. XGBoost, LightGBM), support vector regression (**SVR**), neural networks with a continuous output.
+- **Classification:** **logistic regression**, **naive Bayes**, **k-nearest neighbors (k-NN)**, **decision trees**, **random forest**, **support vector machines (SVM)**, **gradient-boosted** classifiers, **neural networks** with softmax (including CNNs / transformers for images or text).
+
 ---
 
 ## Unsupervised learning
@@ -58,6 +63,13 @@ The diagram breaks this into four common themes. For each, it helps to ask **wha
 
 **Contrast with supervised:** there is no teacher label \(y_i\) telling you the correct cluster, embedding, or fraud outcome during training; the algorithm optimizes an internal criterion (distance, reconstruction error, density, co-occurrence). Downstream, humans or another system interpret those outputs.
 
+### Example algorithms (unsupervised)
+
+- **Clustering:** **k-means**, **k-medoids**, **hierarchical clustering**, **DBSCAN**, **Gaussian mixture models (GMM)**.
+- **Dimensionality reduction:** **PCA**, **ICA**, **t-SNE**, **UMAP**, **autoencoders** (and variational autoencoders).
+- **Anomaly detection:** **isolation forest**, **one-class SVM**, **local outlier factor (LOF)**, elliptic envelope / robust covariance ideas.
+- **Association rules:** **Apriori**, **FP-Growth**, **Eclat** (frequent pattern mining).
+
 ---
 
 ## Semi-supervised learning
@@ -72,6 +84,13 @@ The diagram breaks this into four common themes. For each, it helps to ask **wha
 Algorithms use **both**: labels anchor what “correct” predictions look like, while unlabeled data helps the model learn the **shape of the input distribution** (smoothness, clusters, manifolds). That often improves accuracy when labeled data alone would be too small.
 
 Examples tied to the diagram include image labeling, text classification, and speech recognition — domains where gathering raw data is easy but high-quality labels are scarce.
+
+### Example algorithms and techniques (semi-supervised)
+
+- **Graph-based:** **label propagation**, **label spreading** (labels diffuse along a similarity graph built from all points).
+- **Self-training / pseudo-labeling:** train on labeled data, predict on unlabeled data, add confident predictions as extra labels, repeat (used with many base models, including deep nets).
+- **Consistency regularization (deep learning):** **MixMatch**, **FixMatch**, **Mean Teacher**, **Π-model** — encourage stable predictions under augmentation on unlabeled points.
+- **Hybrid generative / low-density separation:** **semi-supervised GMM**, some **GAN**-based approaches.
 
 ---
 
@@ -88,6 +107,14 @@ Examples tied to the diagram include image labeling, text classification, and sp
 There is no spreadsheet of “correct actions” for every situation; instead, feedback is **delayed** and **sparse**, and exploration matters.
 
 Examples from the diagram: game playing (e.g. AlphaGo), robotics, and self-driving cars — settings where sequential decisions and long-term payoff dominate.
+
+### Example algorithms (reinforcement learning)
+
+- **Tabular (small discrete state/action):** **Q-learning**, **SARSA**, dynamic programming on known models.
+- **Deep RL — value-based:** **DQN** and successors (Double DQN, Dueling DQN, Rainbow).
+- **Policy optimization:** **REINFORCE**, **TRPO**, **PPO** (widely used default in many domains).
+- **Actor–critic:** **A2C / A3C**, **DDPG**, **TD3**, **SAC** (common for continuous control).
+- **Planning / model-based RL:** **MCTS** (used in AlphaGo-style systems with a learned or given model), **Dyna-Q**, learned-model methods such as **MBPO** (names vary by community).
 
 ---
 
