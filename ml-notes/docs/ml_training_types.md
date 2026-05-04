@@ -1,3 +1,9 @@
+---
+sidebar_position: 2
+---
+
+# ML Training Types
+
 ## Table of Contents
 
 1. [Batch (Offline) Learning](#1-batch-offline-learning)
@@ -30,11 +36,11 @@ All Data → Train Offline (full dataset) → Trained Model → Deploy
 
 ### Figure — batch learning flow
 
-![Batch learning flow: collect all data, train offline on the full dataset, deploy, then retrain from scratch when new data arrives](../assets/batch_learning_flow.svg)
+![Batch learning flow: collect all data, train offline on the full dataset, deploy, then retrain from scratch when new data arrives](/assets/batch_learning_flow.svg)
 
 ### Figure — batch learning pros and cons
 
-![Batch learning advantages and disadvantages](../assets/batch_learning_pros_cons.svg)
+![Batch learning advantages and disadvantages](/assets/batch_learning_pros_cons.svg)
 
 ### Key Characteristics
 
@@ -88,7 +94,7 @@ Mini-batch 1 → Model Update → Mini-batch 2 → Model Update → Mini-batch 3
 
 ### Figure — online learning flow
 
-![Online learning: mini-batches arrive, the model updates after each step, and the same live model serves predictions while learning](../assets/online_learning_flow.svg)
+![Online learning: mini-batches arrive, the model updates after each step, and the same live model serves predictions while learning](/assets/online_learning_flow.svg)
 
 ### Key Characteristics
 
@@ -143,7 +149,7 @@ Libraries that support this:
 
 ### Figure — batch vs online
 
-![Side-by-side comparison of batch and online learning across key dimensions](../assets/batch_vs_online_comparison.svg)
+![Side-by-side comparison of batch and online learning across key dimensions](/assets/batch_vs_online_comparison.svg)
 
 | Dimension | Batch Learning | Online Learning |
 |---|---|---|
@@ -178,7 +184,7 @@ Prediction phase:
 
 ### Figure — instance-based learning
 
-![Instance-based (lazy) learning: store training data, compare new points by similarity, predict from neighbors](../assets/instance_based_learning.svg)
+![Instance-based (lazy) learning: store training data, compare new points by similarity, predict from neighbors](/assets/instance_based_learning.svg)
 
 ### Key Characteristics
 
@@ -246,7 +252,7 @@ Prediction phase:
 
 ### Figure — model-based learning
 
-![Model-based (eager) learning: training data is used to fit parameters; predictions use only the learned model](../assets/model_based_learning.svg)
+![Model-based (eager) learning: training data is used to fit parameters; predictions use only the learned model](/assets/model_based_learning.svg)
 
 ### Key Characteristics
 
@@ -295,7 +301,7 @@ Prediction phase:
 
 ### Figure — instance-based vs model-based
 
-![Side-by-side comparison of instance-based and model-based learning](../assets/instance_vs_model_comparison.svg)
+![Side-by-side comparison of instance-based and model-based learning](/assets/instance_vs_model_comparison.svg)
 
 | Dimension | Instance-Based | Model-Based |
 |---|---|---|
@@ -332,7 +338,7 @@ These four concepts together define **how** a machine learning system learns and
 
 ## Diagram assets
 
-SVG diagrams live in the repo `assets/` folder. Reference:
+SVG diagram sources live under **`ml-notes/static/assets/`** (shown on the site as **`/assets/...`**). Reference:
 
 | File | Topic |
 | --- | --- |

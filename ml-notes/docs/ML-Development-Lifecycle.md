@@ -1,3 +1,7 @@
+---
+sidebar_position: 3
+---
+
 # Machine learning development lifecycle (MLDLC)
 
 Building an ML product is not only picking **supervised vs unsupervised**—teams repeat a broader **lifecycle**: clarify the business problem, prepare data, train models, ship them, and improve them as reality changes. That workflow is often abbreviated **MLDLC** (machine learning development lifecycle).
@@ -8,7 +12,7 @@ This page walks through the stages shown in the flowchart below.
 
 ## Lifecycle diagram
 
-![Machine learning development lifecycle (MLDLC)](../assets/mldlc_flowchart.svg)
+![Machine learning development lifecycle (MLDLC)](/assets/mldlc_flowchart.svg)
 
 ---
 
@@ -57,4 +61,4 @@ The footer maps colors to rough **concerns**:
 ## Related
 
 - Learning paradigms (supervised, unsupervised, etc.) live in [`ML-Types.md`](ML-Types.md).
-- Diagram source: `assets/mldlc_flowchart.svg`.
+- Diagram source: `ml-notes/static/assets/mldlc_flowchart.svg` (URL `/assets/mldlc_flowchart.svg`).

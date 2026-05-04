@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Linear Regression — Fit a Line</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Segoe UI',system-ui,sans-serif;background:#0f1117;color:#e2e8f0;padding:20px}
+  h2{font-size:15px;font-weight:600;color:#94a3b8;margin-bottom:14px;letter-spacing:.05em;text-transform:uppercase}
+  .controls{display:flex;gap:16px;margin-bottom:12px;flex-wrap:wrap}
+  .ctrl{display:flex;align-items:center;gap:8px;flex:1;min-width:180px}
+  label{font-size:13px;color:#64748b;white-space:nowrap}
+  input[type=range]{flex:1;accent-color:#3b82f6}
+  .val{font-size:13px;font-weight:600;color:#e2e8f0;min-width:36px}
+  .cards{display:flex;gap:10px;margin-bottom:12px}
+  .card{flex:1;background:#1e2533;border:1px solid #2d3748;border-radius:8px;padding:10px 14px}
+  .card-label{font-size:11px;color:#64748b;margin-bottom:4px}
+  .card-val{font-size:16px;font-weight:600;color:#e2e8f0}
+  canvas{width:100%;border-radius:8px;border:1px solid #2d3748;display:block}
+  button{background:#1e2533;border:1px solid #3b82f6;color:#60a5fa;padding:6px 16px;border-radius:6px;font-size:13px;cursor:pointer;transition:background .15s}
+  button:hover{background:#2d3748}
+</style>
+</head>
+<body>
+<h2>Fit a line to the data</h2>
+<div class="controls">
+  <div class="ctrl">
+    <label>Slope (m)</label>
+    <input type="range" id="slope" min="-3" max="6" step="0.1" value="2"/>
+    <span class="val" id="_slope-val">2.0</span>
+  </div>
+  <div class="ctrl">
+    <label>Intercept (b)</label>
+    <input type="range" id="intercept" min="-100" max="300" step="5" value="50"/>
+    <span class="val" id="_intercept-val">50</span>
+  </div>
+  <button onclick="fitLine()">Best fit ✦</button>
+</div>
+<div class="cards">
+  <div class="card"><div class="card-label">Equation</div><div class="card-val" id="eq">price = 2.0 × size + 50</div></div>
+  <div class="card"><div class="card-label">MSE (lower = better)</div><div class="card-val" id="mse">—</div></div>
+</div>
+<canvas id="c" width="700" height="340"></canvas>
+<script>
+const pts=[[10,72],[15,105],[20,130],[25,160],[30,195],[35,210],[40,265],[45,270],[50,315],[55,340],[60,380],[65,400],[70,430],[75,460],[80,500]];
+const cv=document.getElementById('c'),ctx=cv.getContext('2d');
+const W=700,H=340,pad=48,xMn=0,xMx=90,yMn=0,yMx=550;
+function tx(x){return pad+(x-xMn)/(xMx-xMn)*(W-2*pad)}
+function ty(y){return H-pad-(y-yMn)/(yMx-yMn)*(H-2*pad)}
+function draw(){
+  const m=+document.getElementById('slope').value;
+  const b=+document.getElementById('intercept').value;
+  ctx.clearRect(0,0,W,H);
+  ctx.strokeStyle='#1e2d45';ctx.lineWidth=1;
+  for(let x=0;x<=90;x+=15){ctx.beginPath();ctx.moveTo(tx(x),ty(yMn));ctx.lineTo(tx(x),ty(yMx));ctx.stroke()}
+  for(let y=0;y<=550;y+=100){ctx.beginPath();ctx.moveTo(tx(xMn),ty(y));ctx.lineTo(tx(xMx),ty(y));ctx.stroke()}
+  ctx.strokeStyle='#334155';ctx.lineWidth=1;
+  ctx.beginPath();ctx.moveTo(tx(0),ty(0));ctx.lineTo(tx(90),ty(0));ctx.stroke();
+  ctx.beginPath();ctx.moveTo(tx(0),ty(0));ctx.lineTo(tx(0),ty(550));ctx.stroke();
+  ctx.fillStyle='#475569';ctx.font='11px sans-serif';ctx.textAlign='center';
+  for(let x=0;x<=90;x+=15)ctx.fillText(x,tx(x),ty(0)+16);
+  ctx.textAlign='right';
+  for(let y=0;y<=550;y+=100)if(y)ctx.fillText(y,tx(0)-6,ty(y)+4);
+  ctx.fillStyle='#475569';ctx.font='12px sans-serif';ctx.textAlign='center';
+  ctx.fillText('House size (m²)',W/2,H-4);
+  ctx.save();ctx.translate(14,H/2);ctx.rotate(-Math.PI/2);ctx.fillText('Price ($k)',0,0);ctx.restore();
+  let mse=0;pts.forEach(([x,y])=>{mse+=(m*x+b-y)**2});mse=Math.round(mse/pts.length);
+  document.getElementById('mse').textContent=mse.toLocaleString();
+  pts.forEach(([x,y])=>{
+    const p=m*x+b;
+    ctx.strokeStyle='rgba(239,68,68,0.35)';ctx.lineWidth=1.5;ctx.setLineDash([3,3]);
+    ctx.beginPath();ctx.moveTo(tx(x),ty(y));ctx.lineTo(tx(x),ty(p));ctx.stroke();ctx.setLineDash([]);
+  });
+  ctx.strokeStyle='#3b82f6';ctx.lineWidth=2.5;
+  ctx.beginPath();ctx.moveTo(tx(0),ty(b));ctx.lineTo(tx(90),ty(m*90+b));ctx.stroke();
+  pts.forEach(([x,y])=>{
+    ctx.beginPath();ctx.arc(tx(x),ty(y),5,0,Math.PI*2);
+    ctx.fillStyle='#60a5fa';ctx.fill();
+    ctx.strokeStyle='#1d4ed8';ctx.lineWidth=1;ctx.stroke();
+  });
+  const ms=m.toFixed(1),bs=(b>=0?'+':'')+b;
+  document.getElementById('eq').textContent='price = '+ms+' × size '+bs;
+  document.getElementById('_slope-val').textContent=m.toFixed(1);
+  document.getElementById('_intercept-val').textContent=b;
+}
+function fitLine(){
+  const n=pts.length,mx=pts.reduce((s,[x])=>s+x,0)/n,my=pts.reduce((s,[,y])=>s+y,0)/n;
+  const num=pts.reduce((s,[x,y])=>s+(x-mx)*(y-my),0),den=pts.reduce((s,[x])=>s+(x-mx)**2,0);
+  const m=num/den,b=my-m*mx;
+  document.getElementById('slope').value=m.toFixed(2);
+  document.getElementById('intercept').value=Math.round(b);
+  draw();
+}
+document.getElementById('slope').addEventListener('input',draw);
+document.getElementById('intercept').addEventListener('input',draw);
+draw();
+</script>
+</body>
+</html>

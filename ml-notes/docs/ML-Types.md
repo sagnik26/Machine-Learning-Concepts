@@ -1,12 +1,16 @@
+---
+sidebar_position: 1
+---
+
 # Types of machine learning
 
-Machine learning is often grouped by **what feedback the algorithm gets during training**. The diagrams below live in `assets/` and mirror a common textbook-style taxonomy: supervised, unsupervised, semi-supervised, and reinforcement learning.
+Machine learning is often grouped by **what feedback the algorithm gets during training**. A common textbook-style taxonomy is: supervised, unsupervised, semi-supervised, and reinforcement learning.
 
 ---
 
 ## Overview
 
-![Types of ML — four main branches](../assets/ml_root.svg)
+![Types of ML — four main branches](/assets/ml_root.svg)
 
 At a high level:
 
@@ -23,7 +27,7 @@ The sections below unpack each branch so you can connect the pictures to how mod
 
 ## Supervised learning
 
-![Supervised learning: regression and classification](../assets/ml_supervised.svg)
+![Supervised learning: regression and classification](/assets/ml_supervised.svg)
 
 **Supervised learning** means your training data includes **correct answers** (labels) for each example. The model’s job is to map inputs to outputs so it can generalize to new, unseen inputs.
 
@@ -36,7 +40,7 @@ Two classic splits:
   - a **probability (or score) per class** (a vector such as `[0.05, 0.92, 0.03]` over three categories), from which you pick the argmax class or apply a threshold for **binary** problems (spam vs not spam).  
   **Binary classification** has exactly two classes; **multiclass** has three or more (e.g. digit 0–9, species names). Typical losses: logistic / binary cross-entropy, softmax cross-entropy.
 
-**How to think about it:** you have \((x_i, y_i)\) pairs; training minimizes error between predicted \(\hat{y}_i\) and true \(y_i\) using a loss suited to regression (numeric distance) or classification (wrong-class penalty). Rough mnemonic: regression → **how much / how many** (a quantity); classification → **which one** (a category).
+**How to think about it:** you have \((x_i, y_i)\) pairs; training minimizes error between predicted \(\hat\{y\}_i\) and true \(y_i\) using a loss suited to regression (numeric distance) or classification (wrong-class penalty). Rough mnemonic: regression → **how much / how many** (a quantity); classification → **which one** (a category).
 
 ### Example algorithms (supervised)
 
@@ -47,7 +51,7 @@ Two classic splits:
 
 ## Unsupervised learning
 
-![Unsupervised learning: clustering, dimensionality reduction, anomaly detection, association](../assets/ml_unsupervised.svg)
+![Unsupervised learning: clustering, dimensionality reduction, anomaly detection, association](/assets/ml_unsupervised.svg)
 
 **Unsupervised learning** uses data **without labels**. The model looks for patterns, compresses representation, or flags unusual points.
 
@@ -59,7 +63,7 @@ The diagram breaks this into four common themes. For each, it helps to ask **wha
 
 3. **Anomaly detection** — **find outliers** that don’t match normal behavior (e.g. fraud detection). **Outputs:** typically an **anomaly score** (a real number—higher means more suspicious) and/or a **binary flag** (normal vs anomaly). Often trained only on “normal” data or with very few labeled anomalies.
 
-4. **Association** — **find item rules** that co-occur often (e.g. market basket analysis). **Outputs:** **rules** such as “if {diapers} then {beer}” plus metrics like **support** (how often the pattern appears) and **confidence** (how often the consequent appears given the antecedent)—not a label per row in the supervised sense.
+4. **Association** — **find item rules** that co-occur often (e.g. market basket analysis). **Outputs:** **rules** such as “if \{diapers\} then \{beer\}” plus metrics like **support** (how often the pattern appears) and **confidence** (how often the consequent appears given the antecedent)—not a label per row in the supervised sense.
 
 **Contrast with supervised:** there is no teacher label \(y_i\) telling you the correct cluster, embedding, or fraud outcome during training; the algorithm optimizes an internal criterion (distance, reconstruction error, density, co-occurrence). Downstream, humans or another system interpret those outputs.
 
@@ -74,7 +78,7 @@ The diagram breaks this into four common themes. For each, it helps to ask **wha
 
 ## Semi-supervised learning
 
-![Semi-supervised learning: labeled + unlabeled data](../assets/ml_semi_supervised.svg)
+![Semi-supervised learning: labeled + unlabeled data](/assets/ml_semi_supervised.svg)
 
 **Semi-supervised learning** sits between supervised and unsupervised. In practice:
 
@@ -96,7 +100,7 @@ Examples tied to the diagram include image labeling, text classification, and sp
 
 ## Reinforcement learning
 
-![Reinforcement learning: agent, environment, reward](../assets/ml_reinforcement.svg)
+![Reinforcement learning: agent, environment, reward](/assets/ml_reinforcement.svg)
 
 **Reinforcement learning (RL)** is built around **decisions over time**, not static labeled datasets:
 
@@ -130,11 +134,11 @@ For the full flowchart (**`mldlc_flowchart.svg`**) and a stage-by-stage walkthro
 
 | File | Role |
 | --- | --- |
-| `assets/ml_root.svg` | Top-level split into four paradigms |
-| `assets/ml_supervised.svg` | Regression vs classification + examples |
-| `assets/ml_unsupervised.svg` | Four unsupervised families + examples |
-| `assets/ml_semi_supervised.svg` | Small labeled + large unlabeled + use cases |
-| `assets/ml_reinforcement.svg` | Agent / environment / reward + examples |
-| `assets/mldlc_flowchart.svg` | End-to-end ML project lifecycle — see [ML-Development-Lifecycle.md](ML-Development-Lifecycle.md) |
+| `static/assets/ml_root.svg` | Top-level split into four paradigms |
+| `static/assets/ml_supervised.svg` | Regression vs classification + examples |
+| `static/assets/ml_unsupervised.svg` | Four unsupervised families + examples |
+| `static/assets/ml_semi_supervised.svg` | Small labeled + large unlabeled + use cases |
+| `static/assets/ml_reinforcement.svg` | Agent / environment / reward + examples |
+| `static/assets/mldlc_flowchart.svg` | End-to-end ML project lifecycle — see [ML-Development-Lifecycle.md](ML-Development-Lifecycle.md) |
 
 Use this page together with the SVGs: read a section, open the matching diagram, then revisit the bullets to reinforce vocabulary.
