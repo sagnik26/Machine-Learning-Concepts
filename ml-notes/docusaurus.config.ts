@@ -21,7 +21,7 @@ const config: Config = {
   // - Project site URL: https://<org>.github.io/<projectName>/
   // - So baseUrl must match "/<projectName>/"
   url: 'https://sagnik26.github.io',
-  baseUrl: '/ml-notes/',
+  baseUrl: '/Machine-Learning-Concepts/',
 
   organizationName: 'sagnik26',
   projectName: 'Machine-Learning-Concepts',
