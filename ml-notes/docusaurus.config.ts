@@ -17,13 +17,19 @@ const config: Config = {
     v4: true,
   },
 
+  // GitHub Pages deployment:
+  // - Project site URL: https://<org>.github.io/<projectName>/
+  // - So baseUrl must match "/<projectName>/"
   url: 'https://sagnik26.github.io',
-  baseUrl: '/',
+  baseUrl: '/ml-notes/',
 
   organizationName: 'sagnik26',
   projectName: 'Machine-Learning-Concepts',
 
   onBrokenLinks: 'throw',
+
+  deploymentBranch: 'gh-pages',
+  trailingSlash: false,
 
   i18n: {
     defaultLocale: 'en',
