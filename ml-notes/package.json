@@ -4,8 +4,10 @@
   "private": true,
   "scripts": {
     "docusaurus": "docusaurus",
-    "start": "NODE_OPTIONS=\"--localstorage-file=/tmp/docusaurus-localstorage.json\" docusaurus start",
-    "build": "NODE_OPTIONS=\"--localstorage-file=/tmp/docusaurus-localstorage.json\" docusaurus build",
+    "start": "docusaurus start",
+    "build": "docusaurus build",
+    "start:node25": "NODE_OPTIONS=\"--localstorage-file=/tmp/docusaurus-localstorage.json\" docusaurus start",
+    "build:node25": "NODE_OPTIONS=\"--localstorage-file=/tmp/docusaurus-localstorage.json\" docusaurus build",
     "swizzle": "docusaurus swizzle",
     "deploy": "docusaurus deploy",
     "clear": "docusaurus clear",
