@@ -32,7 +32,7 @@ With **multiple features**: `y = m₁x₁ + m₂x₂ + ... + mₙxₙ + b`
 > Watch MSE drop as your line improves. Click **Best fit** to see the optimal answer.
 
 {/* Full HTML lives in `static/demos/`: MDX cannot parse `<!DOCTYPE`, `{`, or `<script>` inside JSX children. */}
-<InteractiveDemo id="linear-regression-demo" src="/demos/linear-regression-demo.html" />
+<InteractiveDemo id="linear-regression-demo" height={640} src="/demos/linear-regression-demo.html" />
 
 ---
 
@@ -51,7 +51,7 @@ new_weight = old_weight − learning_rate × gradient
 
 > Try stepping manually, or hit **Run** to watch it converge. Crank the learning rate above 0.7 to see it overshoot.
 
-<InteractiveDemo id="gradient-descent-demo" src="/demos/gradient-descent-demo.html" />
+<InteractiveDemo id="gradient-descent-demo" height={640} src="/demos/gradient-descent-demo.html" />
 
 ---
 
@@ -97,7 +97,7 @@ After training, you need to know *how good* the model is on data it has never se
 > Toggle between model types to see how the predicted vs actual scatter plot changes.
 > Points hugging the diagonal = good model.
 
-<InteractiveDemo id="evaluation-demo" src="/demos/evaluation-demo.html" />
+<InteractiveDemo id="evaluation-demo" height={620} src="/demos/evaluation-demo.html" />
 
 ---
 

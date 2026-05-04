@@ -1,9 +1,12 @@
 import React from 'react';
+import useBaseUrl from '@docusaurus/useBaseUrl';
 
 type Props = {
   id?: string;
   /** Static demo URL under `/static` e.g. `/demos/foo.html` (use when MDX cannot embed raw HTML). */
   src?: string;
+  /** Iframe height in px. */
+  height?: number;
   children?: React.ReactNode;
 };
 
@@ -18,24 +21,24 @@ function collectText(node: React.ReactNode): string {
   return '';
 }
 
-const frameStyle: React.CSSProperties = {
+const baseFrameStyle: React.CSSProperties = {
   width: '100%',
-  height: 480,
   border: '2px solid #1e293b',
   borderRadius: 12,
   display: 'block',
 };
 
-export default function InteractiveDemo({id, src, children}: Props) {
+export default function InteractiveDemo({id, src, height = 720, children}: Props) {
   const srcDoc = src ? '' : collectText(children).trim();
+  const resolvedSrc = src ? useBaseUrl(src) : undefined;
 
   return (
     <iframe
       id={id}
       title={id ?? 'Interactive demo'}
-      src={src}
+      src={resolvedSrc}
       srcDoc={src ? undefined : srcDoc || undefined}
-      style={frameStyle}
+      style={{...baseFrameStyle, height}}
       sandbox="allow-scripts allow-same-origin"
     />
   );
