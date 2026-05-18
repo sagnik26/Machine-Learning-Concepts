@@ -1,0 +1,391 @@
+---
+title: Simple Linear Regression
+description: A complete guide to Simple Linear Regression — the foundational supervised learning algorithm for predicting continuous values from a single input feature.
+tags: [machine-learning, regression, supervised-learning, linear-regression]
+---
+
+# Simple Linear Regression
+
+## Introduction
+
+**Linear Regression** is the foundational algorithm in Machine Learning — the first algorithm every data scientist encounters. It belongs to the **Supervised Learning** category and solves **Regression problems** (predicting continuous numerical values).
+
+### Why Linear Regression?
+
+| Reason | Description |
+|---|---|
+| Easy to understand | Most primitive and intuitive ML algorithm |
+| Foundation building | Understanding it helps in learning advanced algorithms |
+| Explainable | You can describe exactly what's happening mathematically |
+| Practical | Still widely used in production systems |
+
+---
+
+## What is Linear Regression?
+
+Linear Regression is a supervised machine learning algorithm used to predict a **continuous target variable** based on one or more input features. It establishes a **linear relationship** between input variables (X) and output variable (y).
+
+### Key Characteristics
+
+| Characteristic | Description |
+|---|---|
+| Type | Supervised Learning — Regression |
+| Output | Continuous numerical values |
+| Relationship | Linear relationship between features and target |
+| Goal | Find the best-fit line through data points |
+| Use Cases | Price prediction, salary estimation, trend forecasting |
+
+---
+
+## Simple Linear Regression
+
+**Definition:** Linear Regression with **one input feature** and **one output feature**.
+
+- Only 1 independent variable (X)
+- Only 1 dependent variable (y)
+- Represented by a straight line in 2D space
+
+### Example Problem
+
+**Dataset:** College Student Placement Data
+
+- **Input Feature:** CGPA (Cumulative Grade Point Average)
+- **Output Feature:** Package (Salary in LPA — Lakhs Per Annum)
+- **Goal:** Predict a student's placement package based on CGPA
+
+| Student | CGPA | Package (LPA) |
+|---|---|---|
+| 1 | 6.89 | 3.26 |
+| 2 | 5.12 | 1.98 |
+| 3 | 7.82 | 3.25 |
+| 4 | 7.42 | 3.67 |
+| 5 | 6.94 | 3.57 |
+
+---
+
+## Mathematical Foundation
+
+### The Line Equation
+
+The fundamental equation of Linear Regression is the equation of a straight line:
+
+```
+y = mx + b
+```
+
+| Symbol | Meaning |
+|---|---|
+| `y` | Predicted output (dependent variable) |
+| `x` | Input feature (independent variable) |
+| `m` | Slope of the line |
+| `b` | Y-intercept |
+
+**In Machine Learning terminology:**
+
+```
+ŷ = θ₁x + θ₀
+```
+
+| Symbol | Meaning |
+|---|---|
+| `ŷ` | Predicted value |
+| `θ₁` | Weight / Coefficient |
+| `θ₀` | Bias / Intercept |
+| `x` | Feature value |
+
+**Trained model on CGPA-Package dataset:**
+
+```
+Package = 0.5579 × CGPA − 0.8961
+```
+
+**Example Prediction (CGPA = 8.58):**
+
+```
+Package = 0.5579 × 8.58 − 0.8961
+        = 4.7868 − 0.8961
+        = 3.8907 LPA
+```
+
+---
+
+### Understanding Slope (m)
+
+The slope represents the **rate of change** or **weight** of the input feature.
+
+```
+m = Δy / Δx = Change in Output / Change in Input
+```
+
+**Formula:**
+
+```
+m = Σ[(xᵢ - x̄)(yᵢ - ȳ)] / Σ[(xᵢ - x̄)²]
+```
+
+**Step-by-Step Calculation:**
+
+1. Calculate means: `x̄ = (1/n) Σxᵢ`, `ȳ = (1/n) Σyᵢ`
+2. Calculate deviations: `dxᵢ = xᵢ - x̄`, `dyᵢ = yᵢ - ȳ`
+3. Numerator: `Σ dxᵢ × dyᵢ`
+4. Denominator: `Σ dxᵢ²`
+5. `m = Numerator / Denominator`
+
+**Interpretation of Slope Value:**
+
+| Slope | Meaning | Example |
+|---|---|---|
+| `m > 0` | Positive relationship: Y increases as X increases | Higher CGPA → Higher Package |
+| `m < 0` | Negative relationship: Y decreases as X increases | More absence → Lower grades |
+| `m = 0` | No relationship | Random factors |
+| `‖m‖ large` | Strong dependency | Small change in X causes large change in Y |
+| `‖m‖ small` | Weak dependency | Large change in X causes small change in Y |
+
+> For our example: **m = 0.5579** → "For every 1 point increase in CGPA, the package increases by approximately 0.56 LPA"
+
+---
+
+### Understanding Intercept (b)
+
+The intercept is the value of y when x = 0.
+
+```
+b = ȳ - m × x̄
+```
+
+The intercept represents the **base value** or **starting point** of the output, independent of the input feature.
+
+**Why is the intercept important?**
+
+Without intercept: `Salary = m × Experience`
+- If Experience = 0 → Salary = 0 (unrealistic for a fresher!)
+
+With intercept: `Salary = m × Experience + b`
+- If Experience = 0 → Salary = b (fresher gets a base salary ✓)
+
+**Interpretation in different contexts:**
+
+| Context | Equation | Intercept Meaning |
+|---|---|---|
+| Experience → Salary | `Salary = m × Exp + b` | Starting salary for freshers |
+| House Area → Price | `Price = m × Area + b` | Base price (land value, etc.) |
+| Study Hours → Marks | `Marks = m × Hours + b` | Baseline knowledge/intelligence |
+
+---
+
+## Real-World Data Characteristics
+
+Real-world data is **never perfectly linear** — data points are scattered ("sort of linear" or "approximately linear").
+
+### Reasons for Non-Perfect Linearity
+
+Data is influenced by both **quantifiable** and **unquantifiable** factors:
+
+| Factor | Can Be Quantified? | Impact |
+|---|---|---|
+| CGPA | ✅ Yes | Direct, measurable |
+| Interview Performance | ❌ No | High, but subjective |
+| Company Budget | ❌ No | High, varies by company |
+| Luck/Timing | ❌ No | Unpredictable |
+| Confidence | ❌ No | Moderate, hard to measure |
+
+<Callout type="info">
+Linear Regression captures the overall trend despite random variations (stochastic noise).
+</Callout>
+
+---
+
+## Best Fit Line
+
+### What is a "Best Fit Line"?
+
+The **Best Fit Line** is the line that **minimizes the overall error** between predicted values and actual values.
+
+### How is it Found?
+
+1. **Define Error (Residual):** `eᵢ = yᵢ - ŷᵢ`
+2. **Minimize Sum of Squared Errors (SSE):**
+
+```
+SSE = Σ(yᵢ - ŷᵢ)²
+```
+
+3. Find optimal `m` and `b` that minimize SSE.
+
+**Properties of the Best Fit Line:**
+
+| Property | Description |
+|---|---|
+| Uniqueness | For given data, there is only ONE best fit line |
+| Minimizes Error | Total distance from all points is minimized |
+| Balanced | Some points above, some below the line |
+| Representative | Captures the overall trend in data |
+
+---
+
+## Code Implementation
+
+### Using Scikit-Learn
+
+```python
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+from sklearn.model_selection import train_test_split
+from sklearn.linear_model import LinearRegression
+
+# Load dataset
+df = pd.read_csv('placement.csv')
+
+# Separate features (X) and target (y)
+X = df.iloc[:, 0:1]  # CGPA — 2D array required by sklearn
+y = df.iloc[:, -1]   # Package — 1D array
+
+# Split into train / test sets
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y, test_size=0.2, random_state=2
+)
+
+# Create and train the model
+lr = LinearRegression()
+lr.fit(X_train, y_train)
+
+# Make predictions
+y_pred = lr.predict(X_test)
+
+# Retrieve model parameters
+m = lr.coef_[0]
+b = lr.intercept_
+print(f"Slope (m):     {m:.4f}")
+print(f"Intercept (b): {b:.4f}")
+print(f"Equation: Package = {m:.4f} × CGPA + ({b:.4f})")
+
+# Visualize
+plt.scatter(df['cgpa'], df['package'], alpha=0.6, label='Actual Data')
+plt.plot(X_train, lr.predict(X_train), color='red', linewidth=2, label='Best Fit Line')
+plt.xlabel('CGPA')
+plt.ylabel('Package (in LPA)')
+plt.title('Linear Regression: CGPA vs Package')
+plt.legend()
+plt.grid(True, alpha=0.3)
+plt.show()
+```
+
+**Output:**
+```
+Slope (m):     0.5580
+Intercept (b): -0.8961
+Equation: Package = 0.5580 × CGPA + (-0.8961)
+```
+
+### Manual Prediction Using the Equation
+
+```python
+cgpa_value = 8.58
+manual_prediction = m * cgpa_value + b
+print(f"Manual calculation: {manual_prediction:.4f}")
+print(f"Model prediction:   {lr.predict([[cgpa_value]])[0]:.4f}")
+# Both produce the same result!
+```
+
+---
+
+## Custom Implementation from Scratch
+
+Build Linear Regression without any ML library to understand the mathematics:
+
+```python
+class MeraLR:
+    """Custom Linear Regression — Simple (1 feature)"""
+
+    def __init__(self):
+        self.m = None  # Slope
+        self.b = None  # Intercept
+
+    def fit(self, X_train, y_train):
+        """Train by calculating optimal m and b."""
+        numerator = 0
+        denominator = 0
+        for i in range(X_train.shape[0]):
+            numerator   += (X_train[i] - X_train.mean()) * (y_train[i] - y_train.mean())
+            denominator += (X_train[i] - X_train.mean()) ** 2
+
+        self.m = numerator / denominator
+        self.b = y_train.mean() - (self.m * X_train.mean())
+
+        print(f"Slope (m): {self.m}")
+        print(f"Intercept (b): {self.b}")
+
+    def predict(self, X_test):
+        """Apply the line equation: ŷ = mx + b"""
+        return self.m * X_test + self.b
+
+
+# Usage
+X = df.iloc[:, 0].values  # 1D for custom implementation
+y = df.iloc[:, 1].values
+
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y, test_size=0.2, random_state=2
+)
+
+custom_lr = MeraLR()
+custom_lr.fit(X_train, y_train)
+predictions = custom_lr.predict(X_test)
+```
+
+**Output:**
+```
+Slope (m): 0.5579519734250721
+Intercept (b): -0.8961119222429152
+```
+
+### Scikit-Learn vs Custom — Comparison
+
+| Aspect | Scikit-Learn | Custom Implementation |
+|---|---|---|
+| Ease of Use | Very easy (2 lines) | More code required |
+| Performance | Optimized (C/Cython) | Slower (Pure Python) |
+| Understanding | Black box | Clear mathematics |
+| Features | Many extras | Basic functionality |
+| Production | ✅ Recommended | For learning only |
+
+---
+
+## Prediction Examples
+
+Using `Package = 0.5580 × CGPA − 0.8961`:
+
+| CGPA | Calculation | Predicted Package |
+|---|---|---|
+| 7.0 | 0.558 × 7.0 − 0.8961 | **3.01 LPA** |
+| 8.58 | 0.558 × 8.58 − 0.8961 | **3.89 LPA** |
+| 9.0 | 0.558 × 9.0 − 0.8961 | **4.13 LPA** |
+| 10.0 | 0.558 × 10.0 − 0.8961 | **4.68 LPA** |
+
+> These are trend-based predictions. Actual values may vary due to stochastic factors.
+
+---
+
+## When to Use Simple Linear Regression
+
+| Use Linear Regression When | Avoid When |
+|---|---|
+| Relationship appears linear | Data is highly non-linear |
+| Need interpretable model | Need highest accuracy at all costs |
+| Quick baseline needed | Complex patterns exist |
+| Feature-target correlation exists | Too many outliers |
+| Small to medium datasets | Categorical target variable |
+
+---
+
+## Formula Reference
+
+| Concept | Formula |
+|---|---|
+| Prediction | `ŷ = mx + b` |
+| Slope | `m = Σ(xᵢ - x̄)(yᵢ - ȳ) / Σ(xᵢ - x̄)²` |
+| Intercept | `b = ȳ − m × x̄` |
+| Error (Residual) | `eᵢ = yᵢ − ŷᵢ` |
+| Mean | `x̄ = (1/n) Σxᵢ` |
+| SSE | `SSE = Σ(yᵢ − ŷᵢ)²` |

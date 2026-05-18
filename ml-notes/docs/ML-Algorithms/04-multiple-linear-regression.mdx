@@ -1,0 +1,322 @@
+---
+title: Multiple Linear Regression
+description: Comprehensive guide to Multiple Linear Regression — theory, math, Python implementation, 3D visualization, model assumptions, and evaluation metrics.
+tags: [machine-learning, regression, multiple-linear-regression, supervised-learning]
+---
+
+# Multiple Linear Regression
+
+## Introduction
+
+**Multiple Linear Regression (MLR)** extends Simple Linear Regression to handle **multiple independent variables**. It models the linear relationship between several features (X₁, X₂, X₃, …) and a single continuous target variable (y).
+
+### Regression vs Classification
+
+| Aspect | Regression | Classification |
+|---|---|---|
+| Output Type | Continuous numerical values | Discrete categories / labels |
+| Examples | Price prediction, temperature forecast | Spam detection, image classification |
+| Evaluation | MAE, MSE, R², RMSE | Accuracy, Precision, Recall, F1 |
+| Algorithms | Linear Regression, Ridge, Lasso | Logistic Regression, SVM, Decision Trees |
+
+---
+
+## Types of Linear Regression
+
+| Type | Features | Equation | Dimensions | Use Case |
+|---|---|---|---|---|
+| Simple LR | 1 | `y = mx + b` | 2D (Line) | Single predictor analysis |
+| Multiple LR | 2+ | `y = β₀ + Σ βᵢxᵢ` | 3D+ (Hyperplane) | Multiple predictors |
+| Polynomial | 1+ (with powers) | `y = β₀ + β₁x + β₂x²` | 2D (Curve) | Non-linear relationships |
+
+---
+
+## Mathematical Foundation
+
+### General Form
+
+Multiple Linear Regression extends the equation to multiple independent variables:
+
+```
+y = β₀ + β₁x₁ + β₂x₂ + β₃x₃ + ... + βₙxₙ
+```
+
+**Compact Notation:**
+
+```
+y = β₀ + Σᵢ₌₁ⁿ βᵢxᵢ
+```
+
+| Symbol | Meaning |
+|---|---|
+| `y` | Predicted target value |
+| `β₀` | Intercept (bias term) |
+| `βᵢ` | Coefficient for feature `xᵢ` |
+| `xᵢ` | Independent variable (feature i) |
+| `n` | Number of features |
+
+### Matrix Form
+
+For multiple samples and features:
+
+```
+Y = Xβ + ε
+```
+
+| Symbol | Description | Dimensions |
+|---|---|---|
+| Y | Target vector | (m × 1) |
+| X | Feature matrix (with intercept column) | (m × (n+1)) |
+| β | Coefficient vector | ((n+1) × 1) |
+| ε | Error vector | (m × 1) |
+
+---
+
+## Model Representation
+
+### From Simple to Multiple LR
+
+**Simple Linear Regression (2D):**
+- 1 variable: x, y
+- Equation: `y = mx + b`
+- Geometry: **a line** in 2D space
+- Example: CGPA → Package
+
+**Multiple Linear Regression (3D, 2 features):**
+- 2 variables: x₁, x₂, y
+- Equation: `y = β₀ + β₁x₁ + β₂x₂`
+- Geometry: **a plane** in 3D space
+- Example: CGPA + IQ → Package
+
+**General (nD):**
+- n features
+- Equation: `y = β₀ + β₁x₁ + ... + βₙxₙ`
+- Geometry: **a hyperplane** in (n+1)-dimensional space
+
+### Concrete Example (2 features)
+
+```
+Package = β₀ + β₁ × CGPA + β₂ × IQ
+```
+
+---
+
+## Python Implementation
+
+### Generating Synthetic Data
+
+```python
+from sklearn.datasets import make_regression
+import pandas as pd
+import numpy as np
+
+X, y = make_regression(
+    n_samples=100,
+    n_features=2,
+    n_informative=2,
+    n_targets=1,
+    noise=50
+)
+
+df = pd.DataFrame({
+    'feature1': X[:, 0],
+    'feature2': X[:, 1],
+    'target': y
+})
+```
+
+### Train / Test Split
+
+```python
+from sklearn.model_selection import train_test_split
+
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y, test_size=0.2, random_state=3
+)
+# Training: 80 samples | Testing: 20 samples
+```
+
+### Model Training
+
+```python
+from sklearn.linear_model import LinearRegression
+
+lr = LinearRegression()
+lr.fit(X_train, y_train)
+y_pred = lr.predict(X_test)
+
+print(f"Coefficients: {lr.coef_}")
+print(f"Intercept:    {lr.intercept_}")
+```
+
+**Output:**
+```
+Coefficients: [59.64518074, 13.20409431]
+Intercept:    -7.55491251398082
+```
+
+**Resulting Equation:**
+```
+y = -7.555 + 59.645 × x₁ + 13.204 × x₂
+```
+
+### Parameter Interpretation
+
+| Parameter | Value | Meaning |
+|---|---|---|
+| β₀ (intercept) | -7.555 | Baseline value when all features = 0 |
+| β₁ (feature1) | 59.645 | Target increases by 59.645 per unit increase in feature1 |
+| β₂ (feature2) | 13.204 | Target increases by 13.204 per unit increase in feature2 |
+
+<Callout type="warning">
+Coefficient comparisons for feature importance are only valid if features are on the **same scale**. Always normalize / standardize features before comparing coefficients.
+</Callout>
+
+---
+
+## Model Evaluation
+
+```python
+from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
+import numpy as np
+
+mae  = mean_absolute_error(y_test, y_pred)
+mse  = mean_squared_error(y_test, y_pred)
+rmse = np.sqrt(mse)
+r2   = r2_score(y_test, y_pred)
+
+print(f"MAE:  {mae:.3f}")
+print(f"MSE:  {mse:.3f}")
+print(f"RMSE: {rmse:.3f}")
+print(f"R²:   {r2:.4f}")
+```
+
+**Results on Synthetic Dataset:**
+
+| Metric | Value | Interpretation |
+|---|---|---|
+| MAE | 33.087 | On average, predictions off by 33.087 units |
+| MSE | 1659.914 | Average squared difference |
+| RMSE | 40.74 | Standard deviation of prediction errors (same units as target) |
+| R² | 0.7193 | **71.93% of variance** explained by the model |
+
+### Metrics Comparison
+
+| Metric | Value | Range | Best Value | Sensitivity to Outliers |
+|---|---|---|---|---|
+| MAE | 33.087 | [0, ∞) | 0 | Low |
+| MSE | 1659.914 | [0, ∞) | 0 | High |
+| RMSE | 40.74 | [0, ∞) | 0 | High |
+| R² | 0.7193 | (-∞, 1] | 1 | Moderate |
+
+---
+
+## 3D Visualization
+
+```python
+import plotly.graph_objects as go
+
+# Create a grid
+x = np.linspace(-5, 5, 10)
+y = np.linspace(-5, 5, 10)
+xGrid, yGrid = np.meshgrid(y, x)
+
+# Predict z values for the plane
+final = np.vstack((xGrid.ravel().reshape(1, 100),
+                   yGrid.ravel().reshape(1, 100))).T
+z_final = lr.predict(final).reshape(10, 10)
+
+# Build figure
+fig = go.Figure(data=[
+    go.Scatter3d(x=X[:, 0], y=X[:, 1], z=y,
+                 mode='markers', marker=dict(size=5)),
+    go.Surface(x=xGrid, y=yGrid, z=z_final, opacity=0.5)
+])
+fig.show()
+```
+
+**Geometric Interpretation:**
+
+| Dimensions | Geometry | Example |
+|---|---|---|
+| 1 feature | Line in 2D | CGPA → Package |
+| 2 features | Plane in 3D | CGPA + IQ → Package |
+| n features | Hyperplane in (n+1)D | All features → Package |
+
+---
+
+## Assumptions of Linear Regression
+
+| Assumption | Description | How to Check |
+|---|---|---|
+| Linearity | Linear relationship between features and target | Residual plots |
+| Independence | Observations are independent | Domain knowledge, Durbin-Watson test |
+| Homoscedasticity | Constant variance of residuals | Residual vs. fitted plot |
+| Normality | Residuals are normally distributed | Q-Q plot, histogram |
+| No Multicollinearity | Features are not highly correlated | VIF (Variance Inflation Factor) |
+
+---
+
+## Cost Function and Minimization
+
+**Objective:** Find β that minimizes:
+
+```
+J(β) = (1/2m) Σ(yᵢ - ŷᵢ)²
+```
+
+**Step-by-Step:**
+
+1. Define hypothesis: `ŷᵢ = β₀ + β₁xᵢ₁ + β₂xᵢ₂`
+2. Compute residuals: `eᵢ = yᵢ - ŷᵢ`
+3. Square residuals: `eᵢ² = (yᵢ - ŷᵢ)²`
+4. Sum all squared residuals: `SSE = Σ eᵢ²`
+5. Normalize: `J(β) = SSE / (2m)`
+6. Take partial derivatives and set to zero: `∂J/∂βⱼ = 0` for all j
+7. Solve the normal equations: `XᵀXβ = Xᵀy`
+8. Final solution: **`β = (XᵀX)⁻¹ Xᵀy`**
+
+---
+
+## Prediction Example
+
+For a new data point `(x₁* = 1.0, x₂* = 0.5)`:
+
+```
+ŷ* = -7.555 + 59.645 × 1.0 + 13.204 × 0.5
+   = -7.555 + 59.645 + 6.602
+   = 58.692
+```
+
+---
+
+## When to Use Multiple Linear Regression
+
+**Use when:**
+- Relationship between variables is approximately linear
+- Target variable is continuous
+- Multiple features influence the outcome
+- Interpretability is important
+- Need a quick baseline model
+
+**Avoid when:**
+- Relationship is highly non-linear → use polynomial/tree-based models
+- Target is categorical → use classification algorithms
+- Features are highly correlated → use regularization (Ridge/Lasso)
+- Small dataset with many features → risk of overfitting
+
+---
+
+## Feature Importance from Coefficients
+
+From trained coefficients `[59.645, 13.204]`:
+- Feature 1: |β₁| = 59.645 → higher magnitude → **more impact**
+- Feature 2: |β₂| = 13.204 → lower magnitude → **less impact**
+
+### Model Selection Criteria
+
+| Criterion | Prefer | Trade-off |
+|---|---|---|
+| Fewer Features | Simple, interpretable model | May miss important patterns |
+| More Features | Better fit, lower training error | Risk of overfitting |
+| Optimal | Balance via regularization (Ridge/Lasso) | Complexity vs. performance |

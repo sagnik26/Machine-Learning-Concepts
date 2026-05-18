@@ -1,0 +1,404 @@
+---
+title: Multiple Linear Regression — Matrix Math & Normal Equation
+description: Full mathematical formulation of Multiple Linear Regression using matrix algebra — deriving the Normal Equation (β = (XᵀX)⁻¹XᵀY) from scratch, with dimensional analysis and OLS vs gradient descent comparison.
+tags: [machine-learning, regression, linear-algebra, normal-equation, OLS, matrix]
+---
+
+# Multiple Linear Regression — Matrix Math & Normal Equation
+
+> **Key Objective:** Derive the formula for finding optimal coefficient values β₀, β₁, β₂, …, βₘ that minimize the error between predicted and actual values.
+
+---
+
+## Problem Setup and Notation
+
+### Dataset Example
+
+Consider a dataset with `n` students and `m` input features:
+
+| Student | CGPA (x₁) | IQ (x₂) | Gender (x₃) | Package (y) |
+|---|---|---|---|---|
+| 1 | x₁₁ | x₁₂ | x₁₃ | y₁ |
+| 2 | x₂₁ | x₂₂ | x₂₃ | y₂ |
+| … | … | … | … | … |
+| n | xₙ₁ | xₙ₂ | xₙ₃ | yₙ |
+
+### Prediction Equation
+
+**2 features (plane):**
+```
+ŷ = β₀ + β₁x₁ + β₂x₂
+```
+
+**3 features (hyperplane):**
+```
+ŷ = β₀ + β₁x₁ + β₂x₂ + β₃x₃
+```
+
+**General form (m features):**
+```
+ŷ = β₀ + β₁x₁ + β₂x₂ + ... + βₘxₘ
+```
+
+---
+
+## Matrix Representation
+
+### Why Matrix Form?
+
+Writing a separate prediction equation for each student is impractical. Matrix notation compresses all of them into one expression.
+
+### Individual Predictions
+
+For student 1: `ŷ₁ = β₀ + β₁x₁₁ + β₂x₁₂ + β₃x₁₃`  
+For student 2: `ŷ₂ = β₀ + β₁x₂₁ + β₂x₂₂ + β₃x₂₃`  
+For student n: `ŷₙ = β₀ + β₁xₙ₁ + β₂xₙ₂ + β₃xₙ₃`
+
+### Matrix Decomposition
+
+All predictions can be represented as:
+
+```
+Ŷ = X × β
+```
+
+Where the feature matrix X with an intercept column looks like:
+
+```
+X = | 1  x₁₁  x₁₂  ···  x₁ₘ |
+    | 1  x₂₁  x₂₂  ···  x₂ₘ |
+    | .  ...  ...       ...  |
+    | 1  xₙ₁  xₙ₂  ···  xₙₘ |
+```
+
+And the coefficient vector β:
+
+```
+β = | β₀ |
+    | β₁ |
+    | β₂ |
+    | .  |
+    | βₘ |
+```
+
+**Why does this work?** When you multiply the first row of X by β:
+```
+1·β₀ + x₁₁·β₁ + x₁₂·β₂ + x₁₃·β₃ = ŷ₁
+```
+
+### Matrix Dimensions
+
+| Symbol | Description | Shape |
+|---|---|---|
+| Ŷ | Predicted values vector | (n × 1) |
+| Y | Actual values vector | (n × 1) |
+| X | Feature matrix (with bias column) | (n × (m+1)) |
+| β | Coefficient vector | ((m+1) × 1) |
+
+---
+
+## Loss Function Formulation
+
+### Residual Vector
+
+```
+e = Y - Ŷ     (shape: n × 1)
+```
+
+### Loss Function — Sum of Squared Errors
+
+**Scalar form:**
+```
+E = Σᵢ(yᵢ - ŷᵢ)²
+```
+
+**Matrix form:**
+```
+E = eᵀe = (Y - Ŷ)ᵀ(Y - Ŷ)
+```
+
+**Why `eᵀe` works:**
+```
+eᵀe = [e₁, e₂, ..., eₙ] × | e₁ |
+                             | e₂ |
+                             | .  |
+                             | eₙ |
+    = e₁² + e₂² + ... + eₙ² = Σ eᵢ²  ✓
+```
+
+### Substituting Ŷ = Xβ
+
+```
+E = (Y - Xβ)ᵀ(Y - Xβ)
+```
+
+---
+
+## Mathematical Derivation of β
+
+### Step 1 — Expand the Loss Function
+
+```
+E = (Y - Xβ)ᵀ(Y - Xβ)
+  = (Yᵀ - (Xβ)ᵀ)(Y - Xβ)
+  = (Yᵀ - βᵀXᵀ)(Y - Xβ)
+```
+
+### Step 2 — Multiply Out
+
+```
+E = YᵀY - YᵀXβ - βᵀXᵀY + βᵀXᵀXβ
+```
+
+### Step 3 — Simplify
+
+**Key property:** `YᵀXβ = βᵀXᵀY`
+
+Both terms result in a scalar (1×1 value). For scalars: `s = sᵀ`.  
+Therefore: `YᵀXβ = (YᵀXβ)ᵀ = βᵀXᵀY`
+
+**Simplified loss function:**
+```
+E = YᵀY - 2YᵀXβ + βᵀXᵀXβ
+```
+
+---
+
+## Deriving the Normal Equation
+
+### Step 1 — Take Derivative of Loss Function
+
+```
+dE/dβ = d/dβ[YᵀY] - d/dβ[2YᵀXβ] + d/dβ[βᵀXᵀXβ]
+```
+
+**Term-by-term:**
+1. `d/dβ[YᵀY] = 0` → no β dependency
+2. `d/dβ[2YᵀXβ] = 2YᵀX` → linear in β
+3. `d/dβ[βᵀXᵀXβ] = 2XᵀXβ` → using matrix differentiation formula
+
+**Result:**
+```
+dE/dβ = -2YᵀX + 2XᵀXβ
+```
+
+### Step 2 — Set Derivative to Zero
+
+```
+-2YᵀX + 2XᵀXβ = 0
+XᵀXβ = YᵀX
+```
+
+### Step 3 — Solve for β
+
+Taking transpose of both sides (since XᵀX is symmetric):
+
+```
+β = (XᵀX)⁻¹ XᵀY
+```
+
+<Callout type="success">
+This is the **Normal Equation** — the Ordinary Least Squares (OLS) closed-form solution for Multiple Linear Regression.
+</Callout>
+
+---
+
+## Proving YᵀXβ = βᵀXᵀY (Scalar Property Proof)
+
+**Matrix Dimensions:**
+
+For `YᵀXβ`:
+- `Yᵀ`: (1 × n)
+- `X`: (n × (m+1))
+- `β`: ((m+1) × 1)
+- Result: `(1 × 1)` → scalar ✓
+
+For `βᵀXᵀY`:
+- `βᵀ`: (1 × (m+1))
+- `Xᵀ`: ((m+1) × n)
+- `Y`: (n × 1)
+- Result: `(1 × 1)` → scalar ✓
+
+**Transpose Property for Scalars:** For any scalar s: `s = sᵀ`
+
+Taking transpose of `YᵀXβ`:
+```
+(YᵀXβ)ᵀ = βᵀXᵀ(Yᵀ)ᵀ = βᵀXᵀY
+```
+
+Since both are scalars: `YᵀXβ = βᵀXᵀY` ✓
+
+---
+
+## Matrix Differentiation Formula
+
+For `f(β) = βᵀAβ` where A is symmetric:
+
+```
+df/dβ = 2Aβ
+```
+
+Applied to our loss term `βᵀXᵀXβ`:
+- A = XᵀX (symmetric matrix since (XᵀX)ᵀ = XᵀX)
+- Therefore: `d/dβ[βᵀXᵀXβ] = 2XᵀXβ`
+
+---
+
+## Dimensional Analysis
+
+Verifying `β = (XᵀX)⁻¹ XᵀY` is dimensionally consistent:
+
+| Step | Operation | Shape |
+|---|---|---|
+| Xᵀ | Transpose | ((m+1) × n) |
+| XᵀX | Multiplication | ((m+1) × (m+1)) |
+| (XᵀX)⁻¹ | Inverse | ((m+1) × (m+1)) |
+| XᵀY | Multiplication | ((m+1) × 1) |
+| (XᵀX)⁻¹ XᵀY | Final multiplication | **((m+1) × 1)** |
+
+**β has shape ((m+1) × 1)** — dimensions match! ✓
+
+### Concrete Example
+
+With n = 1000 students, m = 3 features (CGPA, IQ, Gender):
+- X: (1000 × 4)
+- XᵀX: (4 × 4) → **easy to invert**
+- β: (4 × 1) → contains [β₀, β₁, β₂, β₃]
+
+---
+
+## Why Gradient Descent?
+
+### The Problem with Matrix Inversion
+
+The Normal Equation requires computing `(XᵀX)⁻¹`.
+
+**Matrix inversion complexity (Gaussian Elimination):**
+```
+For an (n × n) matrix: O(n³)
+```
+
+XᵀX is an `((m+1) × (m+1))` matrix.
+
+### When Does This Become a Problem?
+
+| Example | m (features) | (XᵀX) size | Inversion Operations |
+|---|---|---|---|
+| Small dataset | 10 | 11 × 11 | 11³ = 1,331 → **Fast!** |
+| Text classification | 10,000 | 10,001 × 10,001 | 10,001³ ≈ 10¹² → **Too Slow!** |
+| Image features | 50,000 | 50,001 × 50,001 | 50,001³ ≈ 10¹⁴ → **Practically impossible!** |
+
+### OLS vs Gradient Descent
+
+| Aspect | OLS (Normal Equation) | Gradient Descent |
+|---|---|---|
+| Type | Closed-form solution | Iterative approximation |
+| Speed for small m | ✅ Very fast | Slower |
+| Speed for large m | ❌ Very slow (O(m³)) | ✅ Much faster |
+| Memory | High (needs matrix inversion) | Low |
+| Convergence | Instant (one calculation) | Requires multiple iterations |
+| Accuracy | Exact solution | Approximate (very close) |
+| When to use | m < 10,000 | m > 10,000 |
+| sklearn class | `LinearRegression()` | `SGDRegressor()` |
+
+---
+
+## Scikit-Learn Implementation
+
+### OLS Method
+
+```python
+from sklearn.linear_model import LinearRegression
+
+model = LinearRegression()
+model.fit(X, y)
+```
+
+### Gradient Descent Method
+
+```python
+from sklearn.linear_model import SGDRegressor
+
+model = SGDRegressor()
+model.fit(X, y)
+```
+
+---
+
+## Computational Complexity Summary
+
+| Operation | Matrix Size | Time Complexity |
+|---|---|---|
+| Matrix Addition | (n × m) | O(nm) |
+| Matrix Multiplication | (n × m) × (m × p) | O(nmp) |
+| Matrix Transpose | (n × m) | O(nm) |
+| Matrix Inversion | (n × n) | **O(n³)** — bottleneck |
+
+**OLS Total Complexity:** Dominated by matrix inversion → **O(m³)**
+
+---
+
+## Key Formulas Summary
+
+| Concept | Formula | Description |
+|---|---|---|
+| Prediction Equation | `ŷ = β₀ + β₁x₁ + ... + βₘxₘ` | Multiple linear regression equation |
+| Matrix Form | `Ŷ = Xβ` | Compact representation |
+| Residual Vector | `e = Y - Ŷ` | Error for each prediction |
+| Loss Function | `E = eᵀe = (Y - Xβ)ᵀ(Y - Xβ)` | Sum of squared errors |
+| Expanded Loss | `E = YᵀY - 2YᵀXβ + βᵀXᵀXβ` | Expanded form for differentiation |
+| **Normal Equation** | **`β = (XᵀX)⁻¹ XᵀY`** | **Optimal coefficients** |
+
+---
+
+## OLS Assumptions
+
+For the Normal Equation to work properly:
+
+1. **Linearity:** Relationship between X and Y is linear
+2. **Independence:** Observations are independent
+3. **Homoscedasticity:** Constant variance of errors
+4. **No Multicollinearity:** Features are not perfectly correlated
+5. **Invertibility:** (XᵀX) must be invertible (non-singular)
+
+<Callout type="warning">
+OLS fails when (XᵀX) is **not invertible** — this happens when features are perfectly correlated (multicollinearity) or when m > n (more features than samples). Use Ridge Regression or Gradient Descent in these cases.
+</Callout>
+
+---
+
+## Pros and Cons of OLS
+
+**Pros:**
+- Exact solution — no approximation
+- No hyperparameters to tune
+- Fast for small to medium datasets
+- One-step calculation
+
+**Cons:**
+- Computationally expensive for large m (`O(m³)`)
+- Requires matrix inversion
+- Numerical stability issues when XᵀX is singular
+- High memory requirements
+
+---
+
+## Mathematical Properties Used
+
+**Transpose Properties:**
+```
+(A + B)ᵀ = Aᵀ + Bᵀ
+(A - B)ᵀ = Aᵀ - Bᵀ
+(AB)ᵀ    = BᵀAᵀ
+(Aᵀ)ᵀ   = A
+```
+
+**Scalar Property:**
+```
+If s is a scalar (1×1 matrix): s = sᵀ
+```
+
+**Symmetric Matrix:**
+```
+XᵀX is always symmetric: (XᵀX)ᵀ = XᵀX
+```

@@ -1,0 +1,619 @@
+---
+title: Assumptions of Linear Regression — Complete Guide
+description: A deep-dive into the 5 core assumptions of Linear Regression — what they mean, the math behind them, how to test each one in Python, and exactly what to do when they're violated.
+tags: [machine-learning, linear-regression, assumptions, statistics, diagnostics, python]
+---
+
+# Assumptions of Linear Regression — Complete Guide
+
+## Why This Matters
+
+Linear Regression is one of the most fundamental algorithms in ML and statistics. But it only produces **reliable, valid results** when certain assumptions hold.
+
+Understanding them matters for three concrete reasons:
+
+| Reason | Detail |
+|---|---|
+| **Interview Importance** | One of the most common data science interview questions |
+| **Model Validity** | Violating assumptions leads to biased, inefficient, or unreliable predictions |
+| **Diagnostic Skill** | Knowing how to test them demonstrates real, practical expertise |
+
+---
+
+## The 5 Assumptions at a Glance
+
+| # | Assumption | What It Means | How to Test |
+|---|---|---|---|
+| 1 | **Linear Relationship** | Input and output have a linear relationship | Scatter plots |
+| 2 | **No Multicollinearity** | Input features are independent of each other | VIF, Correlation Matrix |
+| 3 | **Normality of Residuals** | Errors follow a normal distribution | Histogram, Q-Q Plot |
+| 4 | **Homoscedasticity** | Constant variance of residuals | Residual vs Predicted plot |
+| 5 | **No Autocorrelation** | No pattern or correlation among errors | Residual Line Plot, Durbin-Watson |
+
+---
+
+## Assumption 1 — Linear Relationship Between Input and Output
+
+### Definition
+
+There must exist a **straight-line relationship** between the independent variable(s) X and the dependent variable Y. As X changes, Y changes proportionally and consistently.
+
+### Intuition
+
+Imagine plotting points on a graph:
+- Points form a line going **upward** → Positive linear relationship ✅
+- Points form a line going **downward** → Negative linear relationship ✅
+- Points form a **curve or random cloud** → No linear relationship ❌
+
+### Mathematical Foundation
+
+**Simple Linear Regression:**
+```
+Y = β₀ + β₁X + ε
+```
+
+**Multiple Linear Regression:**
+```
+Y = β₀ + β₁X₁ + β₂X₂ + ... + βₙXₙ + ε
+```
+
+| Symbol | Meaning |
+|---|---|
+| Y | Dependent variable (target) |
+| X₁, X₂, …, Xₙ | Independent variables (features) |
+| β₀ | Intercept (bias term) |
+| β₁, β₂, …, βₙ | Coefficients (slopes) |
+| ε | Error term |
+
+### Relationship Types
+
+| Relationship | Acceptable for Linear Regression? |
+|---|---|
+| Positive Linear (as X↑, Y↑) | ✅ Yes |
+| Negative Linear (as X↑, Y↓) | ✅ Yes |
+| Quadratic (Y changes at squared rate) | ❌ No |
+| Exponential (Y changes exponentially) | ❌ No |
+| No Relationship (random scatter) | ❌ No |
+
+### Why It Matters
+
+- Linear Regression fits a straight line (or hyperplane in multiple dimensions)
+- If the true relationship is **curved**, the linear model will have **high bias**
+- The model assumes: change in X → proportional change in Y
+
+### How to Test
+
+Create scatter plots between each input feature and the target variable:
+
+```python
+import matplotlib.pyplot as plt
+import pandas as pd
+
+fig, axes = plt.subplots(ncols=3, figsize=(12, 4))
+
+axes[0].scatter(df['feature1'], df['target'])
+axes[0].set_title("Feature 1 vs Target")
+axes[0].set_xlabel("Feature 1")
+axes[0].set_ylabel("Target")
+
+axes[1].scatter(df['feature2'], df['target'])
+axes[1].set_title("Feature 2 vs Target")
+axes[1].set_xlabel("Feature 2")
+
+axes[2].scatter(df['feature3'], df['target'])
+axes[2].set_title("Feature 3 vs Target")
+axes[2].set_xlabel("Feature 3")
+
+plt.tight_layout()
+plt.show()
+```
+
+**What to look for:** A rough straight-line pattern between each feature and the target.
+
+### What to Do If Violated
+
+- Apply **polynomial features** (`PolynomialFeatures` in sklearn)
+- Apply **log/Box-Cox transformation** on X or Y
+- Use a non-linear model (Decision Trees, Neural Networks)
+
+---
+
+## Assumption 2 — No Multicollinearity
+
+### Definition
+
+**Multicollinearity** occurs when two or more independent variables are highly correlated with each other. The assumption is that input features should be **independent of one another**.
+
+### Intuition
+
+Imagine two scientists on a project:
+- **Scenario A:** One is a physicist, the other a chemist → Easy to evaluate individual contributions
+- **Scenario B:** Both have identical skills → Impossible to separate who contributed what
+
+If features are correlated, you can't accurately determine each feature's **individual effect** on the target.
+
+### Mathematical Foundation
+
+In linear regression:
+```
+Y = β₀ + β₁X₁ + β₂X₂ + β₃X₃ + ε
+```
+
+Each coefficient represents:
+```
+β₁ = ∂Y/∂X₁  (change in Y when X₁ changes, holding X₂ and X₃ constant)
+```
+
+**The problem:** If X₁ and X₂ are correlated, when X₁ changes, X₂ also changes — violating the assumption that we can hold other variables constant.
+
+### Why This Is Problematic
+
+| Issue | Explanation |
+|---|---|
+| **Unreliable Coefficients** | β values become unstable and change dramatically with small data changes |
+| **Inflated Standard Errors** | Confidence intervals become wider, making it hard to determine significance |
+| **Interpretation Difficulty** | Cannot accurately assess individual feature importance |
+| **Model Instability** | Small changes in data produce very different coefficient estimates |
+
+### Variance Inflation Factor (VIF)
+
+VIF measures how much the variance of a regression coefficient is inflated due to multicollinearity:
+
+```
+VIFᵢ = 1 / (1 - Rᵢ²)
+```
+
+Where **Rᵢ²** is the R-squared obtained by regressing Xᵢ against all other independent variables.
+
+**Interpretation:**
+
+| VIF Value | Interpretation |
+|---|---|
+| VIF = 1 | No correlation with other features |
+| 1 < VIF < 5 | Moderate correlation — usually acceptable |
+| VIF ≥ 5 | High correlation — potential problem |
+| VIF ≥ 10 | Severe multicollinearity — must address |
+
+### How to Test
+
+**Method 1 — VIF:**
+
+```python
+from statsmodels.stats.outliers_influence import variance_inflation_factor
+import pandas as pd
+
+vif_data = []
+for i in range(X_train.shape[1]):
+    vif_data.append(variance_inflation_factor(X_train, i))
+
+vif_df = pd.DataFrame({
+    'Feature': ['feature1', 'feature2', 'feature3'],
+    'VIF': vif_data
+})
+print(vif_df)
+```
+
+**Method 2 — Correlation Matrix Heatmap:**
+
+```python
+import seaborn as sns
+import matplotlib.pyplot as plt
+
+corr_matrix = df[['feature1', 'feature2', 'feature3']].corr()
+
+plt.figure(figsize=(8, 6))
+sns.heatmap(corr_matrix, annot=True, cmap='coolwarm', center=0)
+plt.title('Correlation Matrix of Features')
+plt.show()
+```
+
+**What to look for:** VIF < 5 and pairwise correlations < 0.7.
+
+### What to Do If Violated
+
+- **Remove** one of the highly correlated features
+- Apply **PCA** to reduce correlated features into uncorrelated components
+- Use **Ridge Regression** — it handles multicollinearity through L2 regularization
+
+---
+
+## Assumption 3 — Normality of Residuals
+
+### Definition
+
+The **errors (residuals)** of the model should follow a **Normal (Gaussian) Distribution** with mean zero.
+
+### What Are Residuals?
+
+Residuals are the differences between actual and predicted values:
+
+```
+eᵢ = yᵢ - ŷᵢ
+```
+
+| Symbol | Meaning |
+|---|---|
+| eᵢ | Residual for observation i |
+| yᵢ | Actual value |
+| ŷᵢ | Predicted value |
+
+### Intuition
+
+When you plot all residuals:
+- **Most** residuals should be near zero (model predicts well for most points)
+- **Some** residuals are slightly positive (model under-predicted)
+- **Some** residuals are slightly negative (model over-predicted)
+- **Very few** residuals should be far from zero (extreme errors)
+
+This pattern naturally forms a **bell curve (normal distribution)**.
+
+### Mathematical Foundation
+
+The assumption formally states:
+
+```
+ε ~ N(0, σ²)
+```
+
+This means:
+- Errors follow a **Normal distribution**
+- **Mean of errors = 0**
+- **Variance of errors = σ²** (constant)
+
+### Why It Matters
+
+| Aspect | Impact if Violated |
+|---|---|
+| **Hypothesis Testing** | t-tests and F-tests on coefficients become invalid |
+| **Confidence Intervals** | Intervals may not have correct coverage |
+| **Prediction Intervals** | Uncertainty estimates are incorrect |
+| **Statistical Inference** | p-values are unreliable |
+
+<Callout type="info">
+This assumption matters most for **small samples**. For large datasets (n > 30), the Central Limit Theorem means the sampling distribution of coefficients is approximately normal regardless of the residual distribution.
+</Callout>
+
+### How to Test
+
+**Method 1 — Histogram / KDE of Residuals:**
+
+```python
+import seaborn as sns
+import matplotlib.pyplot as plt
+
+y_pred = model.predict(X_test)
+residuals = y_test - y_pred
+
+sns.displot(residuals, kind='kde')
+plt.title('Distribution of Residuals')
+plt.xlabel('Residuals')
+plt.ylabel('Density')
+plt.axvline(x=0, color='red', linestyle='--', label='Zero')
+plt.legend()
+plt.show()
+```
+
+**Method 2 — Q-Q Plot (Quantile-Quantile):**
+
+```python
+import scipy.stats as stats
+import matplotlib.pyplot as plt
+
+fig, ax = plt.subplots(figsize=(6, 4))
+stats.probplot(residuals, plot=ax, fit=True)
+plt.title('Q-Q Plot of Residuals')
+plt.show()
+```
+
+### Reading the Q-Q Plot
+
+| Pattern | Meaning | Action |
+|---|---|---|
+| Points lie on the line | Normal distribution ✅ | Proceed |
+| Points curve **up** at ends | Heavy tails (outliers) | Consider robust regression |
+| Points curve **down** at ends | Light tails | Generally acceptable |
+| **S-shaped** curve | Skewed data | Apply log or Box-Cox transformation |
+
+### What to Do If Violated
+
+- Apply **log transformation** on the target variable Y
+- Apply **Box-Cox transformation**
+- Investigate and remove **outliers**
+
+---
+
+## Assumption 4 — Homoscedasticity
+
+### Definition
+
+**Homoscedasticity** means the **variance of residuals is constant** across all levels of the independent variables. The violation is called **Heteroscedasticity**.
+
+### Breaking Down the Term
+
+| Component | Meaning |
+|---|---|
+| Homo | Same |
+| Scedasticity | Scatter / Spread |
+| **Combined** | **Same Scatter = Constant Variance** |
+
+### Intuition
+
+When you plot residuals against predicted values:
+- **Homoscedasticity (Good):** Spread of points is **uniform throughout** — like a horizontal band
+- **Heteroscedasticity (Bad):** Spread **changes** — like a cone or funnel shape
+
+### Mathematical Foundation
+
+**Homoscedasticity (satisfied):**
+```
+Var(εᵢ) = σ²   for all i
+```
+
+The variance of errors is the **same constant σ²** for all observations.
+
+**Heteroscedasticity (violated):**
+```
+Var(εᵢ) = σᵢ²   (varies with i)
+```
+
+### Why It Matters
+
+The Gauss-Markov theorem guarantees OLS estimates are **BLUE** (Best Linear Unbiased Estimators) only when homoscedasticity holds. When violated:
+
+| Issue | Impact |
+|---|---|
+| **Inefficient Estimates** | OLS estimates are no longer BLUE |
+| **Invalid Standard Errors** | Standard errors are biased |
+| **Wrong Confidence Intervals** | Intervals may be too narrow or too wide |
+| **Unreliable t-tests** | Hypothesis tests give wrong conclusions |
+
+### How to Test
+
+**Residual vs Predicted Value Plot:**
+
+```python
+import matplotlib.pyplot as plt
+
+y_pred = model.predict(X_test)
+residuals = y_test - y_pred
+
+plt.figure(figsize=(10, 6))
+plt.scatter(y_pred, residuals, alpha=0.6)
+plt.axhline(y=0, color='red', linestyle='--')
+plt.xlabel('Predicted Values (ŷ)')
+plt.ylabel('Residuals (y - ŷ)')
+plt.title('Residual Plot: Check for Homoscedasticity')
+plt.show()
+```
+
+### Interpreting the Plot
+
+| Pattern Observed | Interpretation | Action |
+|---|---|---|
+| Random scatter around zero | ✅ Homoscedasticity | Proceed |
+| Funnel shape (spreading out) | ❌ Heteroscedasticity | Transform Y (e.g., log) |
+| Funnel shape (narrowing) | ❌ Heteroscedasticity | Transform Y |
+| Curved pattern | Non-linearity issue | Add polynomial terms |
+
+### What to Do If Violated
+
+- Apply **log transformation** on the target variable: `Y_new = log(Y)`
+- Apply **square-root transformation**: `Y_new = √Y`
+- Use **Weighted Least Squares (WLS)** — gives less weight to high-variance observations
+- Use **robust standard errors** (available in `statsmodels`)
+
+---
+
+## Assumption 5 — No Autocorrelation of Errors
+
+### Definition
+
+**No Autocorrelation** means the residuals (errors) should be **independent of each other** — there should be no pattern or correlation between consecutive error terms.
+
+### Intuition
+
+When you plot residuals in sequence:
+- **No Autocorrelation (Good):** Random scatter, no visible pattern
+- **Positive Autocorrelation (Bad):** Points follow a smooth curve — similar errors cluster together
+- **Negative Autocorrelation (Bad):** Points alternate systematically
+
+### Types of Autocorrelation
+
+| Type | Pattern | Example |
+|---|---|---|
+| **Positive** | Similar errors cluster together | If error at time t is positive, error at t+1 is likely positive |
+| **Negative** | Errors alternate | If error at time t is positive, error at t+1 is likely negative |
+| **None** | Random pattern | Errors are independent ✅ |
+
+### Mathematical Foundation
+
+Autocorrelation is formally defined as:
+
+```
+Cov(εᵢ, εⱼ) = 0   for all i ≠ j
+```
+
+The covariance between any two different error terms should be **zero**.
+
+**Autocorrelation coefficient:**
+```
+ρ = Cov(εₜ, εₜ₋₁) / Var(ε)
+```
+
+| ρ | Meaning |
+|---|---|
+| ρ = 0 | No autocorrelation ✅ |
+| ρ > 0 | Positive autocorrelation |
+| ρ < 0 | Negative autocorrelation |
+
+### Why It Matters
+
+Autocorrelation is especially critical in **time-series data** (stock prices, sensor readings, sales data over time):
+
+| Issue | Impact |
+|---|---|
+| **Underestimated Standard Errors** | Coefficients appear more significant than they are |
+| **Inefficient Estimates** | OLS is not the most efficient estimator |
+| **Misleading R²** | R² may be artificially inflated |
+| **Poor Predictions** | Model misses systematic patterns |
+
+### How to Test
+
+**Method 1 — Line Plot of Residuals (Visual):**
+
+```python
+import matplotlib.pyplot as plt
+
+residuals = y_test - y_pred
+
+plt.figure(figsize=(12, 4))
+plt.plot(residuals, marker='o', linestyle='-', markersize=4)
+plt.axhline(y=0, color='red', linestyle='--')
+plt.xlabel('Observation Index')
+plt.ylabel('Residuals')
+plt.title('Residual Plot: Check for Autocorrelation')
+plt.show()
+```
+
+**Method 2 — Durbin-Watson Test (Statistical):**
+
+```python
+from statsmodels.stats.stattools import durbin_watson
+
+dw_stat = durbin_watson(residuals)
+print(f"Durbin-Watson Statistic: {dw_stat:.4f}")
+```
+
+### Durbin-Watson Interpretation
+
+| DW Value | Interpretation |
+|---|---|
+| DW ≈ 2 | ✅ No autocorrelation |
+| DW < 1.5 | ❌ Positive autocorrelation |
+| DW > 2.5 | ❌ Negative autocorrelation |
+| 1.5 < DW < 2.5 | Generally acceptable |
+
+### What to Do If Violated
+
+- Add **lagged features** (e.g., previous time step values as input)
+- Use a dedicated **time-series model** (ARIMA, SARIMA, LSTM)
+- Apply **Generalized Least Squares (GLS)**
+
+---
+
+## Complete Diagnostic Workflow
+
+Run this sequence every time you train a Linear Regression model:
+
+```python
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+import scipy.stats as stats
+from statsmodels.stats.outliers_influence import variance_inflation_factor
+from statsmodels.stats.stattools import durbin_watson
+from sklearn.linear_model import LinearRegression
+
+# ── Train your model ─────────────────────────────────────────────────────
+model = LinearRegression()
+model.fit(X_train, y_train)
+y_pred = model.predict(X_test)
+residuals = y_test - y_pred
+
+fig, axes = plt.subplots(2, 3, figsize=(16, 10))
+fig.suptitle('Linear Regression — Assumption Diagnostics', fontsize=14)
+
+# ── 1. Linearity: scatter of each feature vs target ───────────────────────
+axes[0, 0].scatter(X_test[:, 0], y_test, alpha=0.5)
+axes[0, 0].set_title('Assumption 1: Linearity\n(Feature 1 vs Target)')
+axes[0, 0].set_xlabel('Feature 1')
+axes[0, 0].set_ylabel('Target')
+
+# ── 3. Normality: histogram of residuals ──────────────────────────────────
+sns.histplot(residuals, kde=True, ax=axes[0, 1])
+axes[0, 1].axvline(x=0, color='red', linestyle='--')
+axes[0, 1].set_title('Assumption 3: Normality of Residuals')
+axes[0, 1].set_xlabel('Residuals')
+
+# ── 3b. Normality: Q-Q plot ───────────────────────────────────────────────
+stats.probplot(residuals, plot=axes[0, 2])
+axes[0, 2].set_title('Assumption 3: Q-Q Plot')
+
+# ── 4. Homoscedasticity: residuals vs predicted ───────────────────────────
+axes[1, 0].scatter(y_pred, residuals, alpha=0.5)
+axes[1, 0].axhline(y=0, color='red', linestyle='--')
+axes[1, 0].set_title('Assumption 4: Homoscedasticity')
+axes[1, 0].set_xlabel('Predicted Values')
+axes[1, 0].set_ylabel('Residuals')
+
+# ── 5. Autocorrelation: residuals line plot ───────────────────────────────
+axes[1, 1].plot(residuals, marker='o', linestyle='-', markersize=3)
+axes[1, 1].axhline(y=0, color='red', linestyle='--')
+axes[1, 1].set_title('Assumption 5: No Autocorrelation')
+axes[1, 1].set_xlabel('Observation Index')
+axes[1, 1].set_ylabel('Residuals')
+
+# ── 2. Multicollinearity: correlation heatmap ────────────────────────────
+feature_df = pd.DataFrame(X_train, columns=[f'F{i}' for i in range(X_train.shape[1])])
+corr = feature_df.corr()
+sns.heatmap(corr, annot=True, cmap='coolwarm', center=0, ax=axes[1, 2])
+axes[1, 2].set_title('Assumption 2: No Multicollinearity')
+
+plt.tight_layout()
+plt.show()
+
+# ── Print Durbin-Watson and VIF ───────────────────────────────────────────
+print(f"\nDurbin-Watson: {durbin_watson(residuals):.4f}  (ideal ≈ 2.0)")
+
+vif_scores = [variance_inflation_factor(X_train, i) for i in range(X_train.shape[1])]
+for i, v in enumerate(vif_scores):
+    flag = "⚠️" if v >= 5 else "✅"
+    print(f"VIF Feature {i}: {v:.2f}  {flag}")
+```
+
+---
+
+## Quick Reference Table
+
+| # | Assumption | Key Question | Test Method | Ideal Result | Fix if Violated |
+|---|---|---|---|---|---|
+| 1 | Linear Relationship | Is there a straight-line pattern between X and Y? | Scatter plots | Linear pattern visible | Polynomial features, transformations |
+| 2 | No Multicollinearity | Are input features independent? | VIF, Correlation Heatmap | VIF < 5, correlation < 0.7 | Remove features, PCA, Ridge |
+| 3 | Normal Residuals | Do errors follow a bell curve? | Histogram, Q-Q Plot | Bell-shaped, points on Q-Q line | Transform Y, check outliers |
+| 4 | Homoscedasticity | Is error spread constant? | Residual vs Predicted plot | Horizontal band pattern | Log transform Y, WLS |
+| 5 | No Autocorrelation | Are errors independent? | Line plot, Durbin-Watson | Random scatter, DW ≈ 2 | Add lags, time-series model |
+
+---
+
+## Interview Cheat Sheet
+
+<Callout type="info">
+For interviews, always answer in three parts: **(1) what the assumption means**, **(2) how to test it**, **(3) what to do if it's violated**.
+</Callout>
+
+### The 5-Sentence Summary
+
+1. **Linear Relationship** — Input and output must have a linear relationship (positive or negative). Test with scatter plots. Fix with polynomial features or transformations.
+
+2. **No Multicollinearity** — Input features should be independent. Use VIF (should be < 5) and correlation matrix to check. Fix by removing features, using PCA, or switching to Ridge Regression.
+
+3. **Normal Residuals** — Errors should follow a normal distribution centered at zero. Verify with histogram and Q-Q plot. Fix with log/Box-Cox transformation or outlier removal.
+
+4. **Homoscedasticity** — The spread of residuals should be constant across all predictions. Check with a residual vs predicted plot (look for a horizontal band). Fix with log transformation or Weighted Least Squares.
+
+5. **No Autocorrelation** — Errors should show no sequential pattern. Use a residual line plot and Durbin-Watson test (DW ≈ 2 is ideal). Fix by adding lag features or switching to a time-series model.
+
+---
+
+## Code Reference
+
+| Task | Library | Function |
+|---|---|---|
+| Scatter plots | `matplotlib` | `plt.scatter()` |
+| Correlation heatmap | `seaborn` | `sns.heatmap()` |
+| VIF calculation | `statsmodels` | `variance_inflation_factor()` |
+| Residual histogram | `seaborn` | `sns.displot(..., kind='kde')` |
+| Q-Q plot | `scipy.stats` | `stats.probplot()` |
+| Residual vs predicted | `matplotlib` | `plt.scatter(y_pred, residuals)` |
+| Durbin-Watson test | `statsmodels` | `durbin_watson()` |

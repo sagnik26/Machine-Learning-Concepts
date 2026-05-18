@@ -4,10 +4,8 @@
   "private": true,
   "scripts": {
     "docusaurus": "docusaurus",
-    "start": "docusaurus start",
-    "build": "docusaurus build",
-    "start:node25": "NODE_OPTIONS=\"--localstorage-file=/tmp/docusaurus-localstorage.json\" docusaurus start",
-    "build:node25": "NODE_OPTIONS=\"--localstorage-file=/tmp/docusaurus-localstorage.json\" docusaurus build",
+    "start": "NODE_OPTIONS=\"${NODE_OPTIONS:-} --localstorage-file=${TMPDIR:-/tmp}/docusaurus-localstorage.json\" docusaurus start",
+    "build": "NODE_OPTIONS=\"${NODE_OPTIONS:-} --localstorage-file=${TMPDIR:-/tmp}/docusaurus-localstorage.json\" docusaurus build",
     "swizzle": "docusaurus swizzle",
     "deploy": "docusaurus deploy",
     "clear": "docusaurus clear",

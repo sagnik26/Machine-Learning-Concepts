@@ -1,0 +1,387 @@
+---
+title: Regression Metrics
+description: Complete guide to evaluating regression models — MAE, MSE, RMSE, R² Score, and Adjusted R² Score with formulas, examples, pros/cons, and when to use each.
+tags: [machine-learning, regression, evaluation, metrics, MAE, MSE, RMSE, R2]
+---
+
+# Regression Metrics
+
+## Introduction
+
+After training a regression model, the fundamental question is: **"How well is my model performing?"**
+
+Multiple metrics exist because different datasets and scenarios require different evaluation approaches. This guide covers the **five essential regression metrics** every data scientist must understand.
+
+---
+
+## Overview
+
+| Category | Metrics | Purpose | Goal |
+|---|---|---|---|
+| Error Metrics | MAE, MSE, RMSE | Measure prediction errors | **Minimize** these values |
+| Performance Metrics | R², Adjusted R² | Measure model goodness of fit | **Maximize** (closer to 1) |
+
+Throughout these examples, we use the CGPA → Package placement dataset.
+
+---
+
+## 1. Mean Absolute Error (MAE)
+
+### Conceptual Understanding
+
+MAE measures the **average magnitude of errors** without considering direction. For each data point, it calculates the absolute difference between actual and predicted, then averages.
+
+### Formula
+
+```
+MAE = (1/n) Σ|yᵢ - ŷᵢ|
+```
+
+### Geometric Interpretation
+
+Each vertical distance from a data point to the regression line is an absolute error. MAE is the average of all these distances.
+
+### Example Calculation
+
+| i | Actual (yᵢ) | Predicted (ŷᵢ) | |yᵢ - ŷᵢ| |
+|---|---|---|---|
+| 1 | 4.0 | 3.8 | 0.2 |
+| 2 | 3.5 | 3.2 | 0.3 |
+| 3 | 2.0 | 2.5 | 0.5 |
+| 4 | 3.0 | 2.9 | 0.1 |
+| 5 | 4.5 | 4.1 | 0.4 |
+
+```
+MAE = (0.2 + 0.3 + 0.5 + 0.1 + 0.4) / 5 = 1.5 / 5 = 0.30 LPA
+```
+
+**Interpretation:** On average, our model's predictions are off by 0.3 LPA.
+
+### Advantages and Disadvantages
+
+| Advantages | Disadvantages |
+|---|---|
+| Same unit as output (e.g., LPA) | Not differentiable at zero — cannot be used directly as a loss function in gradient-based optimization |
+| Easy to interpret ("Average error is 1.5 LPA") | Treats all errors equally — a 1-unit error has the same weight regardless of proximity |
+| Robust to outliers | — |
+
+---
+
+## 2. Mean Squared Error (MSE)
+
+### Conceptual Understanding
+
+MSE addresses the differentiability problem of MAE by **squaring** the errors. This makes the function smooth and differentiable everywhere, enabling its use as a loss function in gradient descent.
+
+### Formula
+
+```
+MSE = (1/n) Σ(yᵢ - ŷᵢ)²
+```
+
+### Geometric Interpretation
+
+Each squared error can be visualized as the **area of a square** where the side length equals the error magnitude. MSE represents the **mean area** of all these squares.
+
+### Why Squaring Works
+
+The function f(x) = x² is:
+1. Continuous everywhere
+2. Differentiable at all points
+3. **Convex** — has a single minimum (parabolic shape)
+
+This convex nature allows gradient descent to reliably find optimal parameters.
+
+### Example Calculation
+
+Using the same 5 predictions:
+
+| i | Actual (yᵢ) | Predicted (ŷᵢ) | (yᵢ - ŷᵢ)² |
+|---|---|---|---|
+| 1 | 4.0 | 3.8 | 0.04 |
+| 2 | 3.5 | 3.2 | 0.09 |
+| 3 | 2.0 | 2.5 | 0.25 |
+| 4 | 3.0 | 2.9 | 0.01 |
+| 5 | 4.5 | 4.1 | 0.16 |
+
+```
+MSE = (0.04 + 0.09 + 0.25 + 0.01 + 0.16) / 5 = 0.55 / 5 = 0.11 LPA²
+```
+
+<Callout type="warning">
+The unit is **LPA²** (squared), which is not directly interpretable in real-world terms.
+</Callout>
+
+### Advantages and Disadvantages
+
+| Advantages | Disadvantages |
+|---|---|
+| Differentiable everywhere — usable as loss function | Unit is squared — harder to interpret |
+| Penalizes large errors more (squaring amplifies them) | Highly sensitive to outliers |
+| Unique global minimum | Not robust — one extreme value can dominate |
+
+---
+
+## 3. Root Mean Squared Error (RMSE)
+
+### Conceptual Understanding
+
+RMSE is simply the **square root of MSE**. It solves MSE's unit problem while maintaining all its beneficial properties (differentiability, convexity).
+
+### Formula
+
+```
+RMSE = √MSE = √[(1/n) Σ(yᵢ - ŷᵢ)²]
+```
+
+**Relationship:**
+```
+RMSE = √MSE
+MSE  = RMSE²
+```
+
+### Example Calculation
+
+```
+RMSE = √0.11 = 0.332 LPA
+```
+
+**Interpretation:** On average, predictions deviate by approximately 0.33 LPA (in root-mean-square terms).
+
+### Advantages and Disadvantages
+
+| Advantages | Disadvantages |
+|---|---|
+| Same unit as output | Still sensitive to outliers |
+| Differentiable (derived from MSE) | Not robust |
+| Easy interpretation — directly comparable to y values | Large errors still have significant impact |
+| Industry standard in deep learning | — |
+
+---
+
+## MAE vs MSE vs RMSE — Comparison
+
+| Metric | Value | Unit | Interpretation |
+|---|---|---|---|
+| MAE | 0.30 | LPA | Average absolute error |
+| MSE | 0.11 | LPA² | Average squared error |
+| RMSE | 0.33 | LPA | Root of average squared error |
+
+<Callout type="info">
+**RMSE ≥ MAE always** (due to squaring amplifying larger errors). If RMSE ≫ MAE, there are likely large individual errors (outliers).
+</Callout>
+
+---
+
+## 4. R² Score (Coefficient of Determination)
+
+### The Problem with Error Metrics Alone
+
+MAE, MSE, and RMSE tell us *how much error* but don't answer: **"Is 1.5 LPA error good or bad?"**
+
+The answer depends on context:
+- For predicting salaries in crores → 1.5 LPA might be excellent
+- For predicting steering angles in autonomous cars → any error might be dangerous
+
+We need a **context-independent metric** that works across all scales.
+
+### Conceptual Understanding
+
+R² Score answers: **"How much better is my regression model compared to simply predicting the mean?"**
+
+### The Baseline Model
+
+**Without features:** The best prediction is the mean: `ȳ = (1/n) Σyᵢ`
+
+**With features:** A regression model uses CGPA to make better predictions.
+
+R² measures **how much better** the regression model is vs. the mean-only baseline.
+
+### Formula
+
+**Step 1 — SSR (Sum of Squared Residuals for Regression):**
+```
+SSR = Σ(yᵢ - ŷᵢ)²    ← Error of regression line
+```
+
+**Step 2 — SSM (Sum of Squared errors from Mean):**
+```
+SSM = Σ(yᵢ - ȳ)²     ← Error of mean-only baseline
+```
+
+**Step 3 — R²:**
+```
+R² = 1 - SSR/SSM = 1 - Σ(yᵢ - ŷᵢ)² / Σ(yᵢ - ȳ)²
+```
+
+### Interpretation of R² Values
+
+| R² Value | Condition | Interpretation |
+|---|---|---|
+| R² = 1 | SSR = 0 | Perfect model — regression line passes through all points |
+| R² = 0 | SSR = SSM | Model is as bad as just predicting the mean |
+| 0 < R² < 1 | SSR < SSM | Model is better than the mean (typical case) |
+| R² < 0 | SSR > SSM | Model is **worse than the mean** — something is wrong! |
+
+### The Variance Interpretation
+
+```
+R² = Proportion of variance in y explained by X
+```
+
+If R² = 0.80 with CGPA predicting Package:
+- CGPA explains **80%** of the variance in Package
+- 20% of variance remains unexplained (interview, luck, etc.)
+
+### Example Calculation
+
+Given: mean package `ȳ = 3.0 LPA`
+
+| i | Actual yᵢ | Predicted ŷᵢ | ȳ | (yᵢ - ŷᵢ)² | (yᵢ - ȳ)² |
+|---|---|---|---|---|---|
+| 1 | 4.0 | 3.8 | 3.0 | 0.04 | 1.00 |
+| 2 | 3.5 | 3.2 | 3.0 | 0.09 | 0.25 |
+| 3 | 2.0 | 2.5 | 3.0 | 0.25 | 1.00 |
+| 4 | 3.0 | 2.9 | 3.0 | 0.01 | 0.00 |
+| 5 | 4.5 | 4.1 | 3.0 | 0.16 | 2.25 |
+| **Sum** | — | — | — | **0.55** | **4.50** |
+
+```
+R² = 1 - 0.55 / 4.50 = 1 - 0.122 = 0.878
+```
+
+**Interpretation:** Our CGPA-based model explains **87.8%** of the variance in Package.
+
+---
+
+## 5. Adjusted R² Score
+
+### The Problem with R²
+
+R² has a significant flaw: **It never decreases when you add more features**, even if those features are completely irrelevant.
+
+| Model | Features | R² |
+|---|---|---|
+| Model 1 | CGPA | 0.80 |
+| Model 2 | CGPA + IQ (relevant) | 0.90 ✅ |
+| Model 3 | CGPA + Temperature (irrelevant!) | 0.81 ⚠️ |
+
+Adding irrelevant features gives the model more flexibility to fit training data — a form of overfitting.
+
+### The Solution: Adjusted R²
+
+Adjusted R² **penalizes** the addition of features that don't improve the model proportionally.
+
+### Formula
+
+```
+R²_adj = 1 - (1 - R²) × (n - 1) / (n - 1 - k)
+```
+
+Where:
+- `R²` = Regular R² score
+- `n` = Number of data points (rows)
+- `k` = Number of independent features (input columns)
+
+### Understanding the Penalty Mechanism
+
+The penalty factor is `(n - 1) / (n - 1 - k)`:
+
+1. When `k` increases (more features) → denominator `(n - 1 - k)` decreases → fraction increases
+2. This larger fraction multiplies `(1 - R²)` (the unexplained variance)
+3. Result: `1 - (larger value)` = **smaller Adjusted R²**
+
+### Numerical Example
+
+**Scenario 1:** Only CGPA (k=1, n=40, R²=0.78)
+```
+R²_adj = 1 - (1 - 0.78) × 39/38 = 1 - 0.226 = 0.774
+```
+
+**Scenario 2:** CGPA + Random (irrelevant) feature (k=2, R²=0.781 barely increased)
+```
+R²_adj = 1 - (1 - 0.781) × 39/37 = 1 - 0.231 = 0.769 ↓
+```
+
+**Scenario 3:** CGPA + IQ (relevant) feature (k=2, R²=0.80, significant increase)
+```
+R²_adj = 1 - (1 - 0.80) × 39/37 = 1 - 0.211 = 0.789 ↑
+```
+
+| Feature Set | k | R² | Adjusted R² | Conclusion |
+|---|---|---|---|---|
+| CGPA only | 1 | 0.780 | 0.774 | Baseline |
+| CGPA + Random | 2 | 0.781 | 0.769 ↓ | Random feature hurt! |
+| CGPA + IQ | 2 | 0.800 | 0.789 ↑ | IQ helped! |
+
+### When to Use Adjusted R²
+
+| Situation | Use R² | Use Adjusted R² |
+|---|---|---|
+| Simple Linear Regression (1 feature) | Optional | — |
+| Multiple Linear Regression | Use with caution | ✅ Recommended |
+| Feature Selection | — | ✅ Essential |
+| Comparing models with different # of features | — | ✅ Essential |
+
+---
+
+## All Metrics — Summary Table
+
+| Metric | Formula | Unit | Range | Goal | Robust to Outliers | Use Case |
+|---|---|---|---|---|---|---|
+| MAE | `(1/n) Σ‖yᵢ - ŷᵢ‖` | Same as y | [0, ∞) | Minimize | Yes | General error measurement |
+| MSE | `(1/n) Σ(yᵢ - ŷᵢ)²` | y² | [0, ∞) | Minimize | No | Loss function optimization |
+| RMSE | `√MSE` | Same as y | [0, ∞) | Minimize | No | Deep learning, comparable error |
+| R² | `1 - SSR/SSM` | Unitless | (-∞, 1] | Maximize | N/A | Model performance evaluation |
+| Adj R² | `1 - (1-R²)·(n-1)/(n-1-k)` | Unitless | (-∞, 1] | Maximize | N/A | Multiple feature comparison |
+
+---
+
+## Practical Recommendations
+
+| Scenario | Recommended Metrics | Reason |
+|---|---|---|
+| Outlier-heavy data | MAE + R² | MAE is robust; R² for overall fit |
+| Deep Learning | RMSE or MSE | Differentiability is essential |
+| Feature Selection | Adjusted R² | Penalizes irrelevant features |
+| Business Reporting | MAE + RMSE | Easy to explain — "error in same units" |
+| Model Comparison | All five | Comprehensive evaluation |
+| Production Deployment | RMSE + R² | Industry standard |
+
+---
+
+## Python Implementation
+
+```python
+from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
+import numpy as np
+
+# Assuming y_test and y_pred are available
+mae  = mean_absolute_error(y_test, y_pred)
+mse  = mean_squared_error(y_test, y_pred)
+rmse = np.sqrt(mse)
+r2   = r2_score(y_test, y_pred)
+
+# Adjusted R²
+n = len(y_test)
+k = X_test.shape[1]  # number of features
+adj_r2 = 1 - (1 - r2) * (n - 1) / (n - 1 - k)
+
+print(f"MAE:         {mae:.4f}")
+print(f"MSE:         {mse:.4f}")
+print(f"RMSE:        {rmse:.4f}")
+print(f"R²:          {r2:.4f}")
+print(f"Adjusted R²: {adj_r2:.4f}")
+```
+
+---
+
+## Formula Quick Reference
+
+| Metric | Formula |
+|---|---|
+| MAE | `(1/n) Σ ‖yᵢ - ŷᵢ‖` |
+| MSE | `(1/n) Σ (yᵢ - ŷᵢ)²` |
+| RMSE | `√[(1/n) Σ (yᵢ - ŷᵢ)²]` |
+| R² | `1 - Σ(yᵢ - ŷᵢ)² / Σ(yᵢ - ȳ)²` |
+| Adjusted R² | `1 - (1 - R²) · (n-1)/(n-1-k)` |

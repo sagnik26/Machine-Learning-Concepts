@@ -84,7 +84,7 @@ const config: Config = {
           items: [
             {
               label: 'Documentation',
-              to: '/docs/ml_training_types',
+              to: '/docs/Fundamentals/ml_training_types',
             },
             {
               label: 'GitHub',

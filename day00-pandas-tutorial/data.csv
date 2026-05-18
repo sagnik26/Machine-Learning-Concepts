@@ -1,0 +1,5 @@
+age,salary,hired
+25,50000,True
+37,72000,True
+42,90000,False
+66,None,True

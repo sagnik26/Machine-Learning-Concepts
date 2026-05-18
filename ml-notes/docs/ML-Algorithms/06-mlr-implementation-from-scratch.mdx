@@ -1,0 +1,367 @@
+---
+title: Multiple Linear Regression — Implementation from Scratch
+description: Build Multiple Linear Regression from scratch in Python using the Normal Equation, compare it to scikit-learn, and validate that both produce identical coefficients.
+tags: [machine-learning, regression, python, implementation, normal-equation, numpy]
+---
+
+# Multiple Linear Regression — Implementation from Scratch
+
+> **Goal:** Build a complete `MeraLR` class (our own Linear Regression) using the Normal Equation and verify it matches scikit-learn exactly.
+
+---
+
+## Mathematical Foundation
+
+### The Model
+
+For n samples and p features:
+
+```
+ŷ = β₀ + β₁x₁ + β₂x₂ + ... + βₚxₚ
+```
+
+### Matrix Formulation
+
+```
+Ŷ = Xβ
+```
+
+| Symbol | Description | Dimensions |
+|---|---|---|
+| Ŷ | Predicted values vector | (n × 1) |
+| X | Design matrix (with bias column of 1s) | (n × (p+1)) |
+| β | Coefficient vector (including intercept) | ((p+1) × 1) |
+
+### Normal Equation (OLS Solution)
+
+```
+β = (XᵀX)⁻¹ Xᵀy
+```
+
+This directly computes all coefficients in **one step** — the closed-form OLS solution.
+
+---
+
+## Understanding the Design Matrix
+
+### Example Setup
+
+| Parameter | Value | Description |
+|---|---|---|
+| n (samples) | 100 | Number of training examples |
+| p (features) | 3 | Number of input features (CGPA, IQ, Gender) |
+
+### Design Matrix Structure
+
+The design matrix X adds a **column of 1s** for the intercept term:
+
+```
+X = | 1  x₁₁  x₁₂  ···  x₁ₚ |
+    | 1  x₂₁  x₂₂  ···  x₂ₚ |
+    | .  ...  ...       ...  |
+    | 1  xₙ₁  xₙ₂  ···  xₙₚ |
+```
+
+Shape: `(n × (p+1))`
+
+The first column of 1s corresponds to the intercept term β₀.
+
+---
+
+## Step-by-Step Derivation in Code
+
+### Step 1 — Setup
+
+Given:
+- Training data: `X_train` with shape `(n × p)`
+- Target values: `y_train` with shape `(n × 1)`
+
+### Step 2 — Augment the Feature Matrix
+
+Add a column of 1s for the intercept:
+
+```python
+X_augmented = np.insert(X_train, 0, 1, axis=1)  # shape: (n × (p+1))
+```
+
+### Step 3 — Compute XᵀX
+
+```python
+XtX = np.dot(X_augmented.T, X_augmented)  # shape: (p+1) × (p+1)
+```
+
+### Step 4 — Compute the Inverse (XᵀX)⁻¹
+
+```python
+XtX_inv = np.linalg.inv(XtX)  # shape: (p+1) × (p+1)
+```
+
+### Step 5 — Compute Xᵀy
+
+```python
+Xty = np.dot(X_augmented.T, y_train)  # shape: (p+1) × 1
+```
+
+### Step 6 — Calculate Coefficients
+
+```python
+betas = np.dot(XtX_inv, Xty)  # shape: (p+1) × 1
+```
+
+### Step 7 — Extract Intercept and Coefficients
+
+```python
+intercept_ = betas[0]      # β₀
+coef_      = betas[1:]     # [β₁, β₂, ..., βₚ]
+```
+
+---
+
+## Complete MeraLR Class
+
+```python
+import numpy as np
+
+class MeraLR:
+    """
+    Custom Multiple Linear Regression using the Normal Equation.
+
+    Mathematical Formula:
+        β = (XᵀX)⁻¹ Xᵀy
+
+    Where:
+        X is the design matrix (with bias column)
+        y is the target vector
+        β is the coefficient vector
+    """
+
+    def __init__(self):
+        """Initialize coefficient and intercept to None."""
+        self.coef_      = None  # β₁, β₂, ..., βₚ
+        self.intercept_ = None  # β₀
+
+    def fit(self, X_train, y_train):
+        """
+        Fit the model using the Normal Equation.
+
+        Parameters
+        ----------
+        X_train : numpy.ndarray, shape (n_samples, n_features)
+            Training features
+        y_train : numpy.ndarray, shape (n_samples,)
+            Target values
+        """
+        # Step 1: Add bias column (column of 1s at position 0)
+        # Transforms X from (n, p) to (n, p+1)
+        X_train = np.insert(X_train, 0, 1, axis=1)
+
+        # Step 2: Apply Normal Equation: β = (XᵀX)⁻¹ Xᵀy
+        XtX     = np.dot(X_train.T, X_train)         # (p+1) × (p+1)
+        XtX_inv = np.linalg.inv(XtX)                  # (p+1) × (p+1)
+        Xty     = np.dot(X_train.T, y_train)          # (p+1) × 1
+        betas   = np.dot(XtX_inv, Xty)                # (p+1) × 1
+
+        # One-liner equivalent:
+        # betas = np.linalg.inv(X_train.T @ X_train) @ X_train.T @ y_train
+
+        # Step 3: Extract intercept and feature coefficients
+        self.intercept_ = betas[0]
+        self.coef_      = betas[1:]
+
+    def predict(self, X_test):
+        """
+        Make predictions using the learned coefficients.
+
+        Parameters
+        ----------
+        X_test : numpy.ndarray, shape (n_samples, n_features)
+            Test features
+
+        Returns
+        -------
+        y_pred : numpy.ndarray, shape (n_samples,)
+            Predicted values
+
+        Mathematical Formula:
+            ŷ = β₀ + X_test · β
+        """
+        return np.dot(X_test, self.coef_) + self.intercept_
+```
+
+---
+
+## Detailed Code Walkthrough
+
+### `__init__` Method
+
+```python
+def __init__(self):
+    self.coef_      = None  # Coefficients (β₁ to βₚ)
+    self.intercept_ = None  # Intercept (β₀)
+```
+
+- Initializes the model with no learned parameters
+- `coef_` will store feature coefficients after training
+- `intercept_` will store the bias term after training
+
+### `fit` Method — The Bias Column Step
+
+```python
+X_train = np.insert(X_train, 0, 1, axis=1)
+```
+
+| Before | After |
+|---|---|
+| Shape: (353, 10) | Shape: (353, 11) |
+| No bias column | First column is all 1s |
+
+This is critical — without this column, the model cannot learn the intercept.
+
+### `predict` Method
+
+```python
+return np.dot(X_test, self.coef_) + self.intercept_
+```
+
+This applies the linear equation:
+```
+ŷ = β₀ + β₁x₁ + β₂x₂ + ... + βₚxₚ
+  = intercept_ + X_test · coef_
+```
+
+---
+
+## Complete Working Example
+
+```python
+import numpy as np
+from sklearn.datasets import load_diabetes
+from sklearn.model_selection import train_test_split
+from sklearn.linear_model import LinearRegression
+from sklearn.metrics import r2_score
+
+# ── Load the diabetes dataset ──────────────────────────────────────────────
+X, y = load_diabetes(return_X_y=True)
+print(f"X shape: {X.shape}")   # (442, 10) — 442 samples, 10 features
+print(f"y shape: {y.shape}")   # (442,) — 442 target values
+
+# ── Train / Test Split ────────────────────────────────────────────────────
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y, test_size=0.2, random_state=2
+)
+print(f"X_train: {X_train.shape}")  # (353, 10)
+print(f"X_test:  {X_test.shape}")   # (89, 10)
+
+# ── Train Custom Model ────────────────────────────────────────────────────
+our_lr = MeraLR()
+our_lr.fit(X_train, y_train)
+our_pred = our_lr.predict(X_test)
+
+# ── Train sklearn Model ───────────────────────────────────────────────────
+sk_lr = LinearRegression()
+sk_lr.fit(X_train, y_train)
+sk_pred = sk_lr.predict(X_test)
+
+# ── Compare Parameters ────────────────────────────────────────────────────
+print("\nComparison of Parameters:")
+print(f"Our Intercept: {our_lr.intercept_:.6f}")
+print(f"SK  Intercept: {sk_lr.intercept_:.6f}")
+print()
+print(f"Our Coefficients: {our_lr.coef_[:3].round(4)} ...")
+print(f"SK  Coefficients: {sk_lr.coef_[:3].round(4)} ...")
+
+# ── Compare R² Scores ─────────────────────────────────────────────────────
+our_r2 = r2_score(y_test, our_pred)
+sk_r2  = r2_score(y_test, sk_pred)
+print(f"\nOur R²:     {our_r2:.10f}")
+print(f"sklearn R²: {sk_r2:.10f}")
+```
+
+### Expected Output
+
+```
+X shape: (442, 10)
+y shape: (442,)
+X_train: (353, 10)
+X_test:  (89, 10)
+
+Comparison of Parameters:
+Our Intercept: 151.883345
+SK  Intercept: 151.883345
+
+Our Coefficients: [ -9.1609 -205.4623  516.6846] ...
+SK  Coefficients: [ -9.1609 -205.4623  516.6846] ...
+
+Our R²:     0.4399387660
+sklearn R²: 0.4399387660
+```
+
+<Callout type="success">
+Both implementations produce **identical parameters and predictions** — validating our understanding of the Normal Equation.
+</Callout>
+
+---
+
+## Scikit-Learn Results (Diabetes Dataset)
+
+| Metric | Value |
+|---|---|
+| R² Score | 0.4399387660024645 |
+| Intercept | 151.88334520854633 |
+
+**Coefficients (10 features):**
+```
+[-9.16,  -205.46,  516.68,  340.63,  -895.54,
+  561.21,  153.88,  126.73,  861.12,   52.42]
+```
+
+---
+
+## Sklearn vs Custom — Final Comparison
+
+| Aspect | Scikit-Learn | MeraLR (Custom) |
+|---|---|---|
+| Code Length | ~3 lines | ~20 lines |
+| Performance | Optimized (LAPACK/BLAS) | Slower (pure NumPy) |
+| Understanding | Black box | Clear mathematics |
+| Extra Features | Many (regularization, etc.) | Basic |
+| Production Use | ✅ Recommended | For learning only |
+| Identical Results | ✅ Yes | ✅ Yes |
+
+---
+
+## Limitations of This Implementation
+
+| Limitation | Explanation | Solution |
+|---|---|---|
+| No Regularization | Doesn't handle overfitting | Add L1/L2 regularization (Ridge/Lasso) |
+| Assumes Linearity | Data must have linear relationship | Use polynomial features if needed |
+| Sensitive to Outliers | Squared errors amplify outliers | Use robust regression methods |
+| Computationally Expensive | O(m³) for matrix inversion | Use Gradient Descent for large datasets |
+| Multicollinearity | Fails if XᵀX is singular | Use pseudo-inverse (`np.linalg.pinv`) |
+
+---
+
+## Alternative: Using Pseudo-Inverse
+
+For cases where XᵀX may be singular (non-invertible):
+
+```python
+# Instead of:
+betas = np.linalg.inv(X_train.T @ X_train) @ X_train.T @ y_train
+
+# Use the numerically stable pseudo-inverse:
+betas = np.linalg.pinv(X_train) @ y_train
+```
+
+`np.linalg.pinv` uses Singular Value Decomposition (SVD) internally and handles rank-deficient matrices gracefully.
+
+---
+
+## Key Takeaways
+
+1. The **Normal Equation** `β = (XᵀX)⁻¹ Xᵀy` gives the exact OLS solution
+2. Adding a **bias column of 1s** is essential for the intercept term
+3. The custom implementation produces **bit-for-bit identical results** to sklearn
+4. OLS is **fast for small datasets** but impractical when m > 10,000 features
+5. Understanding the math helps you know **when and why** algorithms fail
