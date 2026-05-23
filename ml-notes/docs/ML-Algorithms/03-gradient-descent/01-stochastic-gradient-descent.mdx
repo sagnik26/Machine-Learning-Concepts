@@ -1,0 +1,697 @@
+---
+title: Stochastic Gradient Descent (SGD) — Complete Guide
+description: A complete guide to Stochastic Gradient Descent — why Batch GD fails at scale, SGD's core concept and mathematical derivation, step-by-step update rules, implementation from scratch, convergence behaviour, learning rate schedules, and sklearn's SGDRegressor.
+tags: [machine-learning, gradient-descent, SGD, optimization, linear-regression, python, numpy]
+---
+
+# Stochastic Gradient Descent (SGD) — Complete Guide
+
+## Term Definitions
+
+Before diving in, understand the three words in the name:
+
+| Term | Definition |
+|---|---|
+| **Stochastic** | Randomly determined — has a random probability distribution that can be analysed statistically but cannot be predicted precisely |
+| **Gradient** | The vector of partial derivatives of a function with respect to all its variables |
+| **Descent** | Moving downward toward the minimum value |
+
+**Combined definition:**
+
+> Stochastic Gradient Descent is an optimization algorithm where the gradient is calculated using **only ONE randomly selected data point** at each iteration, rather than the entire dataset.
+
+---
+
+## 1. The Problem with Batch Gradient Descent
+
+Before understanding SGD, you must understand *why* Batch GD breaks down. There are two concrete problems.
+
+---
+
+### Problem 1 — Computational Complexity
+
+In Batch GD, to calculate the coefficients you must compute the derivative of the loss function with respect to each parameter using **all rows** in the dataset:
+
+```
+∂J/∂βⱼ = −(2/m) Σᵢ₌₁ᵐ (yᵢ − ŷᵢ) · xᵢⱼ
+```
+
+Where `m` = number of rows (samples).
+
+**The computational cost explodes with data size:**
+
+**Scenario A — Small dataset:**
+
+| Parameter | Value |
+|---|---|
+| Rows (n) | 1,000 → 10³ |
+| Columns | 5 → 6 coefficients → ~10² |
+| Epochs | 50 → ~10³ |
+| **Total derivatives** | **10³ × 10² × 10³ = 10⁸** |
+
+**Scenario B — Large dataset (big data):**
+
+| Parameter | Value |
+|---|---|
+| Rows (n) | 100,000 → 10⁵ |
+| Columns | 100 → ~10² coefficients |
+| Epochs | 1,000 → 10³ |
+| **Total derivatives** | **10⁵ × 10² × 10³ = 10¹⁰** |
+
+<Callout type="warning">
+With 10¹⁰ calculations, Batch GD becomes extremely **slow on big data** — and this only gets worse as you scale.
+</Callout>
+
+---
+
+### Problem 2 — Memory / Vectorization Bottleneck
+
+Batch GD uses **vectorization** to avoid loops and speed up computation:
+
+```python
+y_hat = np.dot(X_train, self.coef_) + self.intercept_
+```
+
+This single line computes predictions for all rows simultaneously — but it requires **loading the entire dataset into RAM at once**.
+
+If your dataset is 1 GB, 10 GB, or larger — it simply doesn't fit. The result: memory errors and crashes.
+
+---
+
+### Where Batch GD Fails in Practice
+
+| Domain | Data Type | Why Batch GD Fails |
+|---|---|---|
+| CNNs | Images | High-dimensional data, millions of pixels per image |
+| RNNs | Text | Large vocabularies, long sequences |
+| Deep Learning | Mixed | Massive parameter space, enormous datasets |
+
+---
+
+## 2. Stochastic Gradient Descent — Core Concept
+
+### The Key Idea
+
+Instead of using **all m data points** to compute the gradient before updating parameters, SGD uses **one randomly selected data point** per update.
+
+| Aspect | Batch GD | Stochastic GD |
+|---|---|---|
+| Data used per update | All m rows | 1 random row |
+| Updates per epoch | 1 | m (one per row) |
+| Convergence speed | Slower overall | Faster overall |
+| Memory requirement | High (entire dataset) | Low (one row at a time) |
+| Solution stability | Stable, consistent | Variable, fluctuating |
+| Noise in updates | None | High |
+
+---
+
+### Why "Stochastic"?
+
+The row selected for each parameter update is **chosen randomly**. This introduces randomness (stochasticity) into the optimization process. As a direct consequence:
+
+- Running SGD twice on the same data gives **different results**
+- The path to the minimum is **noisy and zigzag**, not smooth
+- This noise is actually useful — it helps **escape local minima** (more on this later)
+
+---
+
+## 3. Mathematical Formulation
+
+### The Loss Function (MSE)
+
+```
+J(β₀, β₁, …, βₙ) = (1/m) Σᵢ₌₁ᵐ (yᵢ − ŷᵢ)²
+```
+
+Where:
+```
+ŷᵢ = β₀ + β₁xᵢ₁ + β₂xᵢ₂ + … + βₙxᵢₙ
+```
+
+---
+
+### Batch GD Update Rule (Reference)
+
+Uses **all m samples** at every step:
+
+**Intercept:**
+```
+∂J/∂β₀ = −(2/m) Σᵢ₌₁ᵐ (yᵢ − ŷᵢ)
+
+β₀ = β₀ − α · ∂J/∂β₀
+```
+
+**Coefficient for feature j:**
+```
+∂J/∂βⱼ = −(2/m) Σᵢ₌₁ᵐ (yᵢ − ŷᵢ) · xᵢⱼ
+
+βⱼ = βⱼ − α · ∂J/∂βⱼ
+```
+
+---
+
+### SGD Update Rule
+
+Uses **ONE randomly selected sample** at every step:
+
+**Intercept:**
+```
+∂J/∂β₀ = −2 · (yᵢ − ŷᵢ)
+
+β₀ = β₀ − α · (−2)(yᵢ − ŷᵢ)
+   = β₀ + 2α · (yᵢ − ŷᵢ)
+```
+
+**Coefficient for feature j:**
+```
+∂J/∂βⱼ = −2 · (yᵢ − ŷᵢ) · xᵢⱼ
+
+βⱼ = βⱼ − α · (−2)(yᵢ − ŷᵢ) · xᵢⱼ
+   = βⱼ + 2α · (yᵢ − ŷᵢ) · xᵢⱼ
+```
+
+---
+
+### Key Mathematical Differences
+
+| Formula Component | Batch GD | Stochastic GD |
+|---|---|---|
+| Summation | `Σᵢ₌₁ᵐ` (all rows) | Single row only |
+| Division by m | `1/m` present | Not needed |
+| Data points used | All m points | 1 random point |
+| Prediction shape | Vector `Ŷ` (m×1) | Scalar `ŷᵢ` |
+
+<Callout type="info">
+The two key simplifications in SGD vs Batch GD: the **sum** collapses to a single term, and the **1/m normalisation disappears** — because there is only one sample.
+</Callout>
+
+---
+
+### Step-by-Step Gradient Calculation for SGD
+
+Given a randomly selected index `idx`:
+
+```
+Single row:  X_idx = [x_idx,1 , x_idx,2 , …, x_idx,n]
+Actual value: y_idx
+```
+
+**Step 1 — Compute prediction:**
+```
+ŷ_idx = β₀ + Σⱼ βⱼ · x_idx,j
+```
+
+**Step 2 — Compute error:**
+```
+error = y_idx − ŷ_idx
+```
+
+**Step 3 — Update intercept:**
+```
+β₀ = β₀ − α · (−2 · error)
+   = β₀ + 2α · error
+```
+
+**Step 4 — Update all coefficients:**
+```
+βⱼ = βⱼ − α · (−2 · error · x_idx,j)
+   = βⱼ + 2α · error · x_idx,j
+```
+
+---
+
+## 4. Batch GD vs SGD — Detailed Comparison
+
+| Feature | Batch GD | Stochastic GD |
+|---|---|---|
+| Data per update | Entire dataset | Single random sample |
+| Updates per epoch | 1 | n (number of samples) |
+| Memory usage | High (loads all data) | Low (one sample at a time) |
+| Computational cost | High per update | Low per update |
+| Convergence path | Smooth, direct | Noisy, zigzag |
+| Final solution | Optimal (for convex) | Near-optimal, varies |
+| Consistency | Same result every run | Different result each run |
+| Big data suitability | Poor | Excellent |
+| Local minima escape | Cannot escape | Can escape (due to noise) |
+| Implementation | Simpler | Slightly more complex |
+
+---
+
+### Advantages of SGD
+
+| Advantage | Explanation |
+|---|---|
+| Faster convergence | More frequent updates mean quicker approach to solution |
+| Low memory usage | Only one sample in memory at a time |
+| Handles big data | Trains on datasets too large to fit in RAM |
+| Escapes local minima | Noise in updates helps jump out of local minima |
+| Online learning | Can update model as new data arrives in a stream |
+
+---
+
+### Disadvantages of SGD
+
+| Disadvantage | Explanation |
+|---|---|
+| Noisy updates | High variance in gradient estimates |
+| No steady solution | Results vary between runs |
+| May not converge exactly | Can oscillate around the minimum |
+| Requires tuning | Learning rate is crucial and sensitive |
+
+---
+
+## 5. Time Complexity Analysis
+
+A common question: **if epochs are fixed, which is faster?**
+
+**Answer:** For a fixed number of epochs, Batch GD does fewer total updates:
+
+| Algorithm | Updates per epoch | Total updates (100 epochs) |
+|---|---|---|
+| Batch GD | 1 | 100 |
+| SGD | n (rows) | 100 × n |
+
+At first glance, Batch GD looks cheaper. But this misses the bigger picture:
+
+### Why SGD is Still Preferred Overall
+
+SGD needs far **fewer epochs** to converge:
+
+| Scenario | Batch GD | SGD |
+|---|---|---|
+| Epochs needed to converge | 1,000 | 10 |
+| Updates per epoch | 1 | 353 |
+| Total updates | 1,000 | 3,530 |
+| Wall-clock time | Longer | **Shorter** |
+
+<Callout type="success">
+SGD converges faster in total time because it reaches a good solution in far fewer epochs, even though it does more updates per epoch.
+</Callout>
+
+---
+
+## 6. Implementation from Scratch
+
+### Dataset Setup
+
+```python
+from sklearn.datasets import load_diabetes
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import r2_score
+import numpy as np
+
+X, y = load_diabetes(return_X_y=True)
+print(f"Dataset shape: {X.shape}")   # (442, 10)
+
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y, test_size=0.2, random_state=2
+)
+```
+
+---
+
+### Batch GD Implementation (Reference)
+
+```python
+class GDRegressor:
+    """Batch Gradient Descent Regressor"""
+
+    def __init__(self, learning_rate=0.01, epochs=100):
+        self.coef_      = None
+        self.intercept_ = None
+        self.lr         = learning_rate
+        self.epochs     = epochs
+
+    def fit(self, X_train, y_train):
+        self.intercept_ = 0
+        self.coef_      = np.ones(X_train.shape[1])
+
+        for i in range(self.epochs):
+            # Predict for ALL rows at once (vectorized)
+            y_hat = np.dot(X_train, self.coef_) + self.intercept_
+
+            # Intercept gradient: −(2/m) Σ(yᵢ − ŷᵢ)
+            intercept_der   = -2 * np.mean(y_train - y_hat)
+            self.intercept_ = self.intercept_ - (self.lr * intercept_der)
+
+            # Coefficient gradients: −(2/m) Xᵀ(Y − Ŷ)
+            coef_der   = -2 * np.dot((y_train - y_hat), X_train) / X_train.shape[0]
+            self.coef_ = self.coef_ - (self.lr * coef_der)
+
+    def predict(self, X_test):
+        return np.dot(X_test, self.coef_) + self.intercept_
+```
+
+---
+
+### SGD Implementation
+
+```python
+class SGDRegressor:
+    """Stochastic Gradient Descent Regressor — from scratch"""
+
+    def __init__(self, learning_rate=0.01, epochs=100):
+        self.coef_      = None
+        self.intercept_ = None
+        self.lr         = learning_rate
+        self.epochs     = epochs
+
+    def fit(self, X_train, y_train):
+        self.intercept_ = 0
+        self.coef_      = np.ones(X_train.shape[1])
+
+        for i in range(self.epochs):
+            for j in range(X_train.shape[0]):
+
+                # RANDOMLY select ONE index
+                idx = np.random.randint(0, X_train.shape[0])
+
+                # Predict for that SINGLE row → scalar, not vector
+                y_hat = np.dot(X_train[idx], self.coef_) + self.intercept_
+
+                # Intercept gradient: −2(yᵢ − ŷᵢ)   [no mean, single value]
+                intercept_der   = -2 * (y_train[idx] - y_hat)
+                self.intercept_ = self.intercept_ - (self.lr * intercept_der)
+
+                # Coefficient gradient: −2(yᵢ − ŷᵢ) · xᵢ   [no mean, single row]
+                coef_der   = -2 * np.dot((y_train[idx] - y_hat), X_train[idx])
+                self.coef_ = self.coef_ - (self.lr * coef_der)
+
+        print(f"Intercept:    {self.intercept_}")
+        print(f"Coefficients: {self.coef_}")
+
+    def predict(self, X_test):
+        return np.dot(X_test, self.coef_) + self.intercept_
+```
+
+---
+
+### Code Differences — Batch GD vs SGD
+
+| Code Element | Batch GD | SGD |
+|---|---|---|
+| Inner loop | None | `for j in range(X_train.shape[0])` |
+| Row selection | All rows (vectorized) | `idx = np.random.randint(0, X_train.shape[0])` |
+| `y_hat` shape | Vector `(m,)` | Scalar |
+| Intercept derivative | `np.mean(y_train - y_hat)` | `y_train[idx] - y_hat` |
+| Coefficient derivative | `np.dot(error, X_train) / m` | `np.dot(error, X_train[idx])` |
+
+---
+
+### Training and Results
+
+```python
+import time
+
+# Batch GD
+start = time.time()
+gdr = GDRegressor(epochs=1000, learning_rate=0.5)
+gdr.fit(X_train, y_train)
+gdr_pred = gdr.predict(X_test)
+print(f"Batch GD  | R²: {r2_score(y_test, gdr_pred):.4f} | Time: {time.time()-start:.4f}s")
+
+# SGD
+start = time.time()
+sgd = SGDRegressor(learning_rate=0.01, epochs=40)
+sgd.fit(X_train, y_train)
+sgd_pred = sgd.predict(X_test)
+print(f"SGD       | R²: {r2_score(y_test, sgd_pred):.4f} | Time: {time.time()-start:.4f}s")
+```
+
+**Results on Diabetes dataset:**
+
+| Model | Epochs | R² Score | Time |
+|---|---|---|---|
+| Batch GD | 1,000 | 0.4534 | 0.006s |
+| SGD | 40 | 0.4205 | 0.17s |
+| sklearn LinearRegression (OLS) | N/A | 0.4399 | — |
+
+<Callout type="info">
+SGD achieves a comparable R² in just 40 epochs vs Batch GD's 1,000. The lower score isn't from fewer iterations — it's from the inherent noise of using one random sample per update.
+</Callout>
+
+---
+
+## 7. Convergence Behaviour
+
+### Why Results Vary Between SGD Runs
+
+Every SGD run picks different random rows, so the optimization path is different every time:
+
+| Run | Intercept | Sample coefficient | R² Score |
+|---|---|---|---|
+| Run 1 | 157.26 | 58.34 | 0.4205 |
+| Run 2 | 155.12 | 55.21 | 0.4189 |
+| Run 3 | 158.45 | 60.15 | 0.4221 |
+
+Set `random_state` or `np.random.seed()` for reproducibility.
+
+### Batch GD vs SGD Convergence Path
+
+| Property | Batch GD | SGD |
+|---|---|---|
+| Path shape | Smooth, direct | Noisy, zigzag |
+| Every step improves loss? | Yes | No — some steps worsen it |
+| Predictability | Fully predictable | Non-deterministic |
+| Final position | Always same | Varies by run |
+
+---
+
+## 8. When to Use SGD
+
+### Use Case 1 — Big Data
+
+| Scenario | Recommendation |
+|---|---|
+| n < 10,000 rows | Batch GD is fine |
+| n > 100,000 rows | Use SGD |
+| n > 1,000,000 rows | SGD is mandatory |
+| Deep Learning (images/text) | Always SGD or Mini-Batch |
+
+### Use Case 2 — Non-Convex Cost Functions
+
+**Convex function** — single global minimum, no local minima. Batch GD works well.
+
+**Non-convex function** — multiple local minima, one global minimum. Batch GD can get **stuck** in a local minimum and never find the global one.
+
+SGD's random noise helps it **jump out of local minima** and continue searching for the global minimum.
+
+| Algorithm | Cost Function | SGD Benefit |
+|---|---|---|
+| Logistic Regression | Non-convex | Escapes local minima |
+| SVM | Non-convex | Better generalisation |
+| Neural Networks | Highly non-convex | Essential for training |
+| Deep Learning | Very non-convex | Standard approach |
+
+---
+
+## 9. Learning Rate Schedules
+
+### The Problem with a Fixed Learning Rate
+
+When SGD gets close to the solution, random oscillations keep it jumping around instead of settling. A fixed learning rate that's good for early training is too large for fine-grained convergence at the end.
+
+### The Solution — Learning Rate Decay
+
+**Concept:** Start with large steps (fast exploration), decrease the learning rate as training progresses (fine-grained settling).
+
+```
+Initial: large steps → Later: small steps
+```
+
+### Time-Based Decay Formula
+
+```python
+def learning_rate(lr_initial, total_iterations, current_iteration):
+    """
+    Time-based decaying learning rate.
+    lr_initial       : starting learning rate (η₀)
+    total_iterations : epochs × rows
+    current_iteration: current step i
+    """
+    return lr_initial / (1 + (current_iteration / total_iterations))
+```
+
+### How It Decays in Practice
+
+Example: `η₀ = 0.1`, total iterations `t = 100`
+
+| Iteration (i) | i / t | Learning Rate ηᵢ |
+|---|---|---|
+| 0 | 0.00 | 0.100 |
+| 25 | 0.25 | 0.080 |
+| 50 | 0.50 | 0.067 |
+| 75 | 0.75 | 0.057 |
+| 99 | 0.99 | 0.050 |
+
+### Types of Learning Rate Schedules
+
+| Schedule | Formula | Description |
+|---|---|---|
+| Constant | `η = η₀` | No decay, fixed rate |
+| Time-based | `η = η₀ / (1 + d×t)` | Linear decay |
+| Step decay | `η = η₀ × dᶠˡᵒᵒʳ⁽ᵗ/ʳ⁾` | Drops by factor d every r epochs |
+| Exponential | `η = η₀ × e^(−dt)` | Exponential decay |
+| Adaptive | Varies | Adam, RMSprop, Adagrad, etc. |
+
+---
+
+### SGD with Learning Rate Schedule — Full Implementation
+
+```python
+class SGDRegressorWithSchedule:
+    """SGD with time-based learning rate decay."""
+
+    def __init__(self, learning_rate=0.01, epochs=100):
+        self.coef_      = None
+        self.intercept_ = None
+        self.lr_initial = learning_rate
+        self.epochs     = epochs
+
+    def _get_lr(self, iteration, total_iterations):
+        """Time-based decay: η = η₀ / (1 + i/t)"""
+        return self.lr_initial / (1 + (iteration / total_iterations))
+
+    def fit(self, X_train, y_train):
+        self.intercept_   = 0
+        self.coef_        = np.ones(X_train.shape[1])
+        total_iterations  = self.epochs * X_train.shape[0]
+        iteration         = 0
+
+        for epoch in range(self.epochs):
+            for j in range(X_train.shape[0]):
+
+                # Decay learning rate at every step
+                lr  = self._get_lr(iteration, total_iterations)
+
+                idx = np.random.randint(0, X_train.shape[0])
+                y_hat = np.dot(X_train[idx], self.coef_) + self.intercept_
+
+                intercept_der   = -2 * (y_train[idx] - y_hat)
+                self.intercept_ = self.intercept_ - (lr * intercept_der)
+
+                coef_der   = -2 * np.dot((y_train[idx] - y_hat), X_train[idx])
+                self.coef_ = self.coef_ - (lr * coef_der)
+
+                iteration += 1
+
+    def predict(self, X_test):
+        return np.dot(X_test, self.coef_) + self.intercept_
+```
+
+---
+
+## 10. Sklearn's `SGDRegressor`
+
+Scikit-learn provides a production-ready SGD implementation with many advanced features:
+
+```python
+from sklearn.linear_model import SGDRegressor
+```
+
+### Key Parameters
+
+| Parameter | Description | Common Options |
+|---|---|---|
+| `loss` | Loss function | `'squared_error'`, `'huber'`, `'epsilon_insensitive'` |
+| `penalty` | Regularization type | `'l2'`, `'l1'`, `'elasticnet'`, `None` |
+| `alpha` | Regularization strength | float, default=`0.0001` |
+| `max_iter` | Number of epochs | int, default=`1000` |
+| `tol` | Stopping tolerance | float, default=`1e-3` |
+| `learning_rate` | Schedule type | `'constant'`, `'optimal'`, `'invscaling'`, `'adaptive'` |
+| `eta0` | Initial learning rate | float, default=`0.01` |
+| `random_state` | Reproducibility seed | int |
+| `early_stopping` | Stop if no improvement | bool |
+
+### Learning Rate Options in Sklearn
+
+| Option | Formula | Description |
+|---|---|---|
+| `'constant'` | `η = η₀` | No change throughout |
+| `'optimal'` | `η = 1 / (α(t₀ + t))` | Derived from the data |
+| `'invscaling'` | `η = η₀ / tᵖᵒʷᵉʳ` | Inverse scaling |
+| `'adaptive'` | Keeps `η₀` until loss stagnates, then divides by 5 | Aggressive decay |
+
+### Usage Example
+
+```python
+from sklearn.linear_model import SGDRegressor
+from sklearn.metrics import r2_score
+
+reg = SGDRegressor(
+    max_iter=100,                # Number of epochs
+    learning_rate='constant',    # No decay
+    eta0=0.01,                   # Initial learning rate
+    random_state=42              # Reproducibility
+)
+
+reg.fit(X_train, y_train)
+y_pred = reg.predict(X_test)
+
+print(f"R² Score: {r2_score(y_test, y_pred):.4f}")
+print(f"Intercept:    {reg.intercept_[0]:.4f}")
+print(f"Coefficients: {reg.coef_}")
+```
+
+### Parameter Mapping — Scratch vs Sklearn
+
+| Our Implementation | sklearn `SGDRegressor` |
+|---|---|
+| `learning_rate` | `eta0` |
+| `epochs` | `max_iter` |
+| `self.coef_` | `coef_` |
+| `self.intercept_` | `intercept_` |
+
+---
+
+## 11. Three Gradient Descent Types — Final Comparison
+
+| Aspect | Batch GD | Stochastic GD | Mini-Batch GD |
+|---|---|---|---|
+| Data per update | Entire dataset | 1 random sample | k samples (batch) |
+| Updates per epoch | 1 | n | n/k |
+| Convergence path | Smooth | Noisy, zigzag | Moderate noise |
+| Memory requirement | High | Low | Moderate |
+| Speed per update | Slow | Fast | Moderate |
+| Overall convergence | Slow | Fast | Fastest in practice |
+| Best for | Small data (n < 10k) | Large data (n > 100k) | Deep learning (standard) |
+| sklearn class | `LinearRegression` | `SGDRegressor` | `SGDRegressor` (batch_size) |
+
+---
+
+## Key Formulas — Quick Reference
+
+| Concept | Formula |
+|---|---|
+| SGD prediction (single row) | `ŷᵢ = β₀ + β₁xᵢ₁ + … + βₘxᵢₘ` |
+| Error (single row) | `eᵢ = yᵢ − ŷᵢ` |
+| Intercept gradient (SGD) | `∂J/∂β₀ = −2eᵢ` |
+| Coefficient gradient (SGD) | `∂J/∂βⱼ = −2eᵢ · xᵢⱼ` |
+| Intercept update | `β₀ = β₀ + 2α · eᵢ` |
+| Coefficient update | `βⱼ = βⱼ + 2α · eᵢ · xᵢⱼ` |
+| Time-based LR decay | `ηᵢ = η₀ / (1 + i/t)` |
+
+---
+
+## Key Takeaways
+
+| # | Takeaway |
+|---|---|
+| 1 | SGD uses **one random sample** per update instead of the entire dataset |
+| 2 | This produces **n updates per epoch** vs 1 for Batch GD |
+| 3 | Despite more updates per epoch, SGD converges **faster overall** (fewer epochs needed) |
+| 4 | **Low memory** — never needs the entire dataset in RAM simultaneously |
+| 5 | Results **vary between runs** due to random row selection |
+| 6 | Can **escape local minima** in non-convex loss landscapes — crucial for deep learning |
+| 7 | **Learning rate schedules** (decay) improve convergence stability near the optimum |
+| 8 | Essential for deep learning, NLP, computer vision — any domain with big data |
+
+---
+
+## Next Steps
+
+After mastering SGD:
+
+1. **Mini-Batch Gradient Descent** — combines the stability of Batch GD with the speed of SGD by using `k` samples per update (Chapter 97)
+2. **Advanced Optimizers** — Momentum, RMSprop, Adam all build directly on SGD
+3. **Regularization** — Ridge and Lasso add a penalty term to the loss, compatible with both Batch GD and SGD

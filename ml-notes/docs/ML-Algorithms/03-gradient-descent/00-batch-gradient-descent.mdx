@@ -1,0 +1,643 @@
+---
+title: Batch Gradient Descent — Complete Guide for Multi-Dimensional Data
+description: A complete guide to Batch Gradient Descent — intuition, full partial derivative derivations for N-dimensional data, matrix formulation with shape analysis, Python implementation from scratch, hyperparameter effects, and a comparison against OLS and other GD variants.
+tags: [machine-learning, gradient-descent, optimization, linear-regression, multi-dimensional, numpy, python]
+---
+
+# Batch Gradient Descent — Complete Guide for Multi-Dimensional Data
+
+## Introduction
+
+### What is Gradient Descent?
+
+**Gradient Descent** is an iterative optimization algorithm used in machine learning to find the optimal parameters (weights and bias) that **minimize a loss function**. It works by repeatedly moving in the direction of steepest descent (negative gradient) until convergence.
+
+### The Mountain Analogy
+
+Imagine you are standing on a mountain in thick fog and want to reach the lowest point (valley). You can't see far, so you:
+
+1. Feel the slope beneath your feet
+2. Take a step in the direction that goes **downhill**
+3. Repeat until you reach the bottom
+
+This is exactly how gradient descent works — it takes steps proportional to the **negative of the gradient** to find the minimum of a function.
+
+### Why Use Gradient Descent?
+
+| Reason | Detail |
+|---|---|
+| **Scalability** | Works efficiently with large datasets |
+| **Generality** | Applicable to many ML algorithms |
+| **Flexibility** | Can optimize any differentiable loss function |
+
+---
+
+## Three Types of Gradient Descent
+
+| Aspect | Batch GD | Stochastic GD | Mini-Batch GD |
+|---|---|---|---|
+| **Data Used per Update** | All N rows | 1 random row | k rows (batch size) |
+| **Updates per Epoch** | 1 | N | N/k |
+| **Convergence Speed** | Slow | Fast | Moderate |
+| **Convergence Stability** | Stable | Noisy | Balanced |
+| **Memory Requirement** | High | Low | Moderate |
+| **Computation per Update** | Heavy | Light | Moderate |
+| **Best For** | Small datasets | Large datasets | Most practical cases |
+
+<Callout type="info">
+This guide focuses entirely on **Batch Gradient Descent** — the foundation you must understand before learning SGD or Mini-Batch GD.
+</Callout>
+
+---
+
+## Batch Gradient Descent — Definition
+
+**Batch Gradient Descent** (also called *Vanilla Gradient Descent*) computes the gradient of the loss function using the **entire training dataset** before making a single parameter update.
+
+### Algorithm Steps
+
+```
+1. Initialize all parameters (β₀, β₁, ..., βₘ) — usually to 0 or 1
+2. FOR each epoch:
+   a. Compute predictions ŷ using all n samples
+   b. Compute the loss L = (1/n) Σ(yᵢ - ŷᵢ)²
+   c. Compute ∂L/∂βⱼ for ALL parameters simultaneously
+   d. Update every parameter: βⱼ ← βⱼ - η · (∂L/∂βⱼ)
+3. REPEAT until convergence or max epochs reached
+```
+
+### Key Characteristics
+
+**Pros:**
+- Stable convergence
+- Guaranteed to find global minimum (for convex functions)
+- Deterministic — same result every run
+
+**Cons:**
+- Slow for large datasets
+- Computationally expensive
+- Memory intensive — requires loading entire dataset at once
+
+---
+
+## Mathematical Formulation for N-Dimensional Data
+
+### Problem Setup
+
+In **Multiple Linear Regression** with Batch GD:
+
+| Component | Description |
+|---|---|
+| Input Features | X₁, X₂, X₃, …, Xₘ (m columns/features) |
+| Output | Y (target variable) |
+| Samples | n rows |
+| Parameters to Learn | m + 1 (m coefficients + 1 intercept) |
+
+### Prediction Equation
+
+For a dataset with m features:
+
+```
+ŷ = β₀ + β₁x₁ + β₂x₂ + ... + βₘxₘ
+```
+
+| Symbol | Meaning |
+|---|---|
+| `β₀` | Intercept (bias term) |
+| `β₁, ..., βₘ` | Coefficients (weights) for each feature |
+| `x₁, ..., xₘ` | Input feature values |
+
+**Example — Student Placement Prediction:**
+
+| CGPA (X₁) | IQ (X₂) | LPA (Y) |
+|---|---|---|
+| 8.1 | 93 | 3.2 |
+| 7.5 | 95 | 3.5 |
+
+```
+ŷ = β₀ + β₁ · CGPA + β₂ · IQ
+```
+
+---
+
+## Loss Function — Mean Squared Error
+
+### Formula
+
+```
+L = (1/n) Σᵢ₌₁ⁿ (yᵢ - ŷᵢ)²
+```
+
+### Expanded Form (2 samples, for illustration)
+
+```
+L = (1/2) [(y₁ - ŷ₁)² + (y₂ - ŷ₂)²]
+```
+
+### Substituting the Prediction Formula
+
+```
+L = (1/2) [(y₁ - β₀ - β₁x₁₁ - β₂x₁₂)² + (y₂ - β₀ - β₁x₂₁ - β₂x₂₂)²]
+```
+
+### Notation Convention
+
+| Symbol | Meaning |
+|---|---|
+| `yᵢ` | Actual value for row i |
+| `ŷᵢ` | Predicted value for row i |
+| `xᵢⱼ` | Value of feature j for row i |
+| `βⱼ` | Coefficient for feature j |
+| `β₀` | Intercept |
+| `n` | Number of samples |
+| `m` | Number of features |
+
+---
+
+## Deriving Partial Derivatives — Full Step-by-Step
+
+To minimize the loss function, we compute partial derivatives with respect to every parameter:
+
+```
+∂L/∂β₀,  ∂L/∂β₁,  ∂L/∂β₂,  ...,  ∂L/∂βₘ
+```
+
+---
+
+### Derivative with Respect to Intercept (β₀)
+
+**Step 1 — Start with the loss:**
+```
+L = (1/n) Σᵢ (yᵢ - ŷᵢ)²
+```
+
+**Step 2 — Expand for 2 samples:**
+```
+L = (1/2) [(y₁ - β₀ - β₁x₁₁ - β₂x₁₂)² + (y₂ - β₀ - β₁x₂₁ - β₂x₂₂)²]
+```
+
+**Step 3 — Apply chain rule** (derivative of (f)² = 2f · f′, inner derivative of β₀ is −1):
+```
+∂L/∂β₀ = (1/2) [2(y₁ - ŷ₁)(−1) + 2(y₂ - ŷ₂)(−1)]
+```
+
+**Step 4 — Simplify:**
+```
+∂L/∂β₀ = −[(y₁ - ŷ₁) + (y₂ - ŷ₂)]
+```
+
+**Step 5 — Generalize for n samples:**
+
+```
+∂L/∂β₀ = −(2/n) Σᵢ₌₁ⁿ (yᵢ - ŷᵢ)
+```
+
+---
+
+### Derivative with Respect to Coefficient β₁
+
+**Step 1 — Apply chain rule** (inner derivative of β₁ is −xᵢ₁):
+```
+∂L/∂β₁ = (1/2) [2(y₁ - ŷ₁)(−x₁₁) + 2(y₂ - ŷ₂)(−x₂₁)]
+```
+
+**Step 2 — Simplify:**
+```
+∂L/∂β₁ = −(y₁ - ŷ₁)·x₁₁ − (y₂ - ŷ₂)·x₂₁
+```
+
+**Step 3 — Generalize for n samples:**
+
+```
+∂L/∂β₁ = −(2/n) Σᵢ₌₁ⁿ (yᵢ - ŷᵢ) · xᵢ₁
+```
+
+---
+
+### Derivative with Respect to Coefficient β₂
+
+Following the exact same pattern:
+
+```
+∂L/∂β₂ = −(2/n) Σᵢ₌₁ⁿ (yᵢ - ŷᵢ) · xᵢ₂
+```
+
+---
+
+### General Formula — Any Coefficient βⱼ
+
+```
+∂L/∂βⱼ = −(2/n) Σᵢ₌₁ⁿ (yᵢ - ŷᵢ) · xᵢⱼ
+```
+
+| Symbol | Meaning |
+|---|---|
+| `j` | Feature index (1 to m) |
+| `xᵢⱼ` | Value of feature j for sample i |
+
+<Callout type="info">
+**The intercept β₀ is just a special case of this formula** where xᵢ₀ = 1 for all rows (the bias column). So the general formula covers everything.
+</Callout>
+
+---
+
+## Parameter Update Rules
+
+### General Update Rule
+
+```
+βⱼ_new = βⱼ_old − η · (∂L/∂βⱼ)
+```
+
+Where **η** (eta) is the **learning rate** — controls how big each step is.
+
+### Intercept Update
+
+Substituting the derivative:
+```
+β₀ = β₀ − η · [−(2/n) Σ(yᵢ - ŷᵢ)]
+```
+
+Simplified (double negative cancels):
+```
+β₀ = β₀ + (2η/n) Σᵢ₌₁ⁿ (yᵢ - ŷᵢ)
+```
+
+### Coefficient Update (Feature j)
+
+```
+βⱼ = βⱼ − η · [−(2/n) Σ(yᵢ - ŷᵢ)·xᵢⱼ]
+```
+
+Simplified:
+```
+βⱼ = βⱼ + (2η/n) Σᵢ₌₁ⁿ (yᵢ - ŷᵢ) · xᵢⱼ
+```
+
+---
+
+## Matrix Formulation
+
+### Why Matrix Form?
+
+Computing gradients individually for each coefficient in a loop is inefficient. Matrix operations let us:
+- Calculate **all gradients simultaneously** in one expression
+- Leverage **optimized linear algebra libraries** (NumPy, BLAS)
+- Write **cleaner, faster code**
+
+### Prediction in Matrix Form
+
+```
+Ŷ = X · β + β₀
+```
+
+| Symbol | Description | Shape |
+|---|---|---|
+| `X` | Feature matrix | (n × m) |
+| `β` | Coefficient vector | (m × 1) |
+| `Ŷ` | Prediction vector | (n × 1) |
+| `β₀` | Intercept (scalar, broadcasts to all rows) | scalar |
+
+### Gradient Calculation in Matrix Form
+
+**For the intercept:**
+```
+∂L/∂β₀ = −(2/n) · mean(Y − Ŷ)
+```
+
+**For all coefficients simultaneously:**
+```
+∂L/∂β = −(2/n) · Xᵀ · (Y − Ŷ)
+```
+
+This single expression computes the gradient for **all m coefficients at once**.
+
+### Shape Analysis — Diabetes Dataset (442 samples, 10 features)
+
+| Matrix / Vector | Shape | Description |
+|---|---|---|
+| `X_train` | (353, 10) | 353 samples, 10 features |
+| `y_train` | (353,) | 353 target values |
+| `β` (coefficients) | (10,) | 10 weights |
+| `Ŷ` (predictions) | (353,) | 353 predictions |
+| `y − Ŷ` (residuals) | (353,) | 353 errors |
+| `Xᵀ` | (10, 353) | Transposed input |
+| `Xᵀ · (y − Ŷ)` | **(10,)** | **All 10 gradients — in one step** |
+
+---
+
+## Python Implementation from Scratch
+
+### Complete `GDRegressor` Class
+
+```python
+import numpy as np
+from sklearn.datasets import load_diabetes
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import r2_score
+from sklearn.linear_model import LinearRegression
+
+
+class GDRegressor:
+    """
+    Batch Gradient Descent Regressor for Multiple Linear Regression.
+
+    Parameters
+    ----------
+    learning_rate : float, default=0.01
+        Step size for parameter updates (η)
+    epochs : int, default=100
+        Number of full passes over the training dataset
+    """
+
+    def __init__(self, learning_rate=0.01, epochs=100):
+        self.coef_      = None   # β₁, β₂, ..., βₘ
+        self.intercept_ = None   # β₀
+        self.lr         = learning_rate
+        self.epochs     = epochs
+
+    def fit(self, X_train, y_train):
+        """
+        Train using Batch Gradient Descent.
+
+        Parameters
+        ----------
+        X_train : ndarray of shape (n_samples, n_features)
+        y_train : ndarray of shape (n_samples,)
+        """
+        # Step 1 — Initialize parameters
+        self.intercept_ = 0
+        self.coef_      = np.ones(X_train.shape[1])   # start all weights at 1
+
+        for i in range(self.epochs):
+
+            # Step 2 — Predictions using ALL rows (vectorized)
+            # ŷ = X · β + β₀
+            y_hat = np.dot(X_train, self.coef_) + self.intercept_
+
+            # Step 3 — Intercept gradient
+            # ∂L/∂β₀ = −(2/n) Σ(yᵢ − ŷᵢ)
+            intercept_der = -2 * np.mean(y_train - y_hat)
+
+            # Step 4 — Update intercept
+            # β₀ = β₀ − η · (∂L/∂β₀)
+            self.intercept_ = self.intercept_ - (self.lr * intercept_der)
+
+            # Step 5 — Coefficient gradients (ALL at once via matrix multiply)
+            # ∂L/∂β = −(2/n) · Xᵀ · (Y − Ŷ)
+            coef_der = -2 * np.dot((y_train - y_hat), X_train) / X_train.shape[0]
+
+            # Step 6 — Update all coefficients
+            # β = β − η · (∂L/∂β)
+            self.coef_ = self.coef_ - (self.lr * coef_der)
+
+        print(f"Intercept:    {self.intercept_}")
+        print(f"Coefficients: {self.coef_}")
+
+    def predict(self, X_test):
+        """
+        Make predictions: ŷ = X · β + β₀
+
+        Parameters
+        ----------
+        X_test : ndarray of shape (n_samples, n_features)
+
+        Returns
+        -------
+        ndarray of shape (n_samples,)
+        """
+        return np.dot(X_test, self.coef_) + self.intercept_
+```
+
+### Step-by-Step Code Explanation
+
+| Step | Code | What It Does |
+|---|---|---|
+| Initialize β₀ | `self.intercept_ = 0` | Intercept starts at 0 |
+| Initialize β | `self.coef_ = np.ones(X_train.shape[1])` | All weights start at 1 |
+| Predict all rows | `np.dot(X_train, self.coef_) + self.intercept_` | Vectorized `Ŷ = Xβ + β₀` |
+| Intercept gradient | `-2 * np.mean(y_train - y_hat)` | `−(2/n) Σ(yᵢ − ŷᵢ)` |
+| Coefficient gradient | `-2 * np.dot((y_train - y_hat), X_train) / n` | `−(2/n) Xᵀ(Y − Ŷ)` |
+| Update β₀ | `self.intercept_ - (self.lr * intercept_der)` | Gradient descent step |
+| Update β | `self.coef_ - (self.lr * coef_der)` | Gradient descent step (all features) |
+
+### Full Usage Example
+
+```python
+# Load and split data
+X, y = load_diabetes(return_X_y=True)
+print(f"Dataset shape: {X.shape}")   # (442, 10)
+
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y, test_size=0.2, random_state=2
+)
+
+# ── sklearn baseline ─────────────────────────────────────────────────────
+sklearn_reg = LinearRegression()
+sklearn_reg.fit(X_train, y_train)
+sklearn_pred = sklearn_reg.predict(X_test)
+print(f"\nsklearn R² Score: {r2_score(y_test, sklearn_pred):.4f}")
+print(f"sklearn Intercept:    {sklearn_reg.intercept_:.4f}")
+print(f"sklearn Coefficients: {sklearn_reg.coef_}")
+
+# ── Batch GD from scratch ─────────────────────────────────────────────────
+gd_reg = GDRegressor(epochs=1000, learning_rate=0.5)
+gd_reg.fit(X_train, y_train)
+gd_pred = gd_reg.predict(X_test)
+print(f"\nBatch GD R² Score: {r2_score(y_test, gd_pred):.4f}")
+```
+
+### Expected Output
+
+```
+Dataset shape: (442, 10)
+
+sklearn R² Score: 0.4399
+sklearn Intercept: 151.8833
+sklearn Coefficients:
+  [ -9.16  -205.46  516.68  340.63  -895.54
+   561.21   153.88  126.73   861.12   52.42]
+
+Intercept:    152.0135
+Coefficients:
+  [  14.39  -173.73  491.55  323.92  -116.01
+  -194.04   103.38   39.33   451.63   97.57]
+
+Batch GD R² Score: 0.4535
+```
+
+<Callout type="info">
+The Batch GD solution is **close but not identical** to the sklearn (OLS) solution because gradient descent is an iterative approximation, not a closed-form exact solve. With more epochs and a tuned learning rate, both converge to the same answer.
+</Callout>
+
+---
+
+## Hyperparameter Effects
+
+### Learning Rate (η)
+
+| Learning Rate | Effect |
+|---|---|
+| Too small (e.g., 0.001) | Slow convergence — may not reach optimal within given epochs |
+| **Optimal (e.g., 0.01–0.5)** | **Good balance of speed and accuracy** |
+| Too large (e.g., > 1) | Overshoots minimum — diverges or oscillates |
+
+### Number of Epochs
+
+| Epochs | Effect |
+|---|---|
+| Too few (10–50) | Underfitting — parameters haven't converged |
+| **Optimal (100–1000)** | **Good convergence for most problems** |
+| Too many (> 10,000) | Diminishing returns — wasted computation |
+
+<Callout type="warning">
+Always **scale your features** before running Batch GD. Features with very different magnitudes cause uneven gradient magnitudes, making training unstable. Use `StandardScaler` or `MinMaxScaler`.
+</Callout>
+
+---
+
+## Batch GD vs Analytical (Normal Equation)
+
+| Aspect | Batch Gradient Descent | Normal Equation (OLS) |
+|---|---|---|
+| **Formula** | Iterative updates | `β = (XᵀX)⁻¹ Xᵀy` |
+| **Scalability** | ✅ Good for large data | ❌ Poor for large data |
+| **Time Complexity** | O(n × m × epochs) | O(m³) for matrix inversion |
+| **Memory** | O(n × m) | O(m²) |
+| **Hyperparameters** | Learning rate, epochs | None |
+| **Feature Scaling** | Required | Not required |
+| **Solution Type** | Approximate (iterative) | Exact (analytical) |
+| **When to Use** | Large datasets (m > 10,000) | Small to medium datasets |
+
+---
+
+## Convergence Behavior
+
+### What "Convergence" Looks Like
+
+As epochs increase, the loss curve should:
+1. **Decrease steeply** in the early epochs
+2. **Flatten out** as it approaches the minimum
+3. **Stabilize** near zero (or a small irreducible error)
+
+If the loss **increases** or **oscillates wildly** — the learning rate is too high.
+
+### Visualizing Loss Over Epochs
+
+```python
+import matplotlib.pyplot as plt
+
+class GDRegressorWithHistory:
+    """Batch GD with loss tracking."""
+
+    def __init__(self, learning_rate=0.01, epochs=100):
+        self.coef_      = None
+        self.intercept_ = None
+        self.lr         = learning_rate
+        self.epochs     = epochs
+        self.loss_history = []
+
+    def fit(self, X_train, y_train):
+        self.intercept_ = 0
+        self.coef_      = np.ones(X_train.shape[1])
+
+        for i in range(self.epochs):
+            y_hat        = np.dot(X_train, self.coef_) + self.intercept_
+            loss         = np.mean((y_train - y_hat) ** 2)
+            self.loss_history.append(loss)
+
+            intercept_der       = -2 * np.mean(y_train - y_hat)
+            self.intercept_    -= self.lr * intercept_der
+
+            coef_der   = -2 * np.dot((y_train - y_hat), X_train) / X_train.shape[0]
+            self.coef_ -= self.lr * coef_der
+
+    def predict(self, X_test):
+        return np.dot(X_test, self.coef_) + self.intercept_
+
+    def plot_loss(self):
+        plt.figure(figsize=(10, 4))
+        plt.plot(self.loss_history)
+        plt.xlabel('Epoch')
+        plt.ylabel('MSE Loss')
+        plt.title('Batch GD — Loss vs Epochs')
+        plt.grid(True, alpha=0.3)
+        plt.show()
+
+
+# Usage
+gd = GDRegressorWithHistory(learning_rate=0.5, epochs=1000)
+gd.fit(X_train, y_train)
+gd.plot_loss()
+```
+
+---
+
+## When to Use Batch Gradient Descent
+
+### Use Batch GD When
+
+- Dataset **fits in memory** comfortably
+- You need **stable, reliable convergence**
+- You have sufficient **computational resources**
+- The loss surface is **convex or nearly convex**
+- You want **identical results** on each run (deterministic)
+
+### Avoid Batch GD When
+
+- Dataset is **very large** (millions of samples) — use SGD or Mini-Batch GD
+- **Real-time / online learning** is required — data arrives in streams
+- **Computational resources are limited** — every epoch processes all data
+- You're working in **deep learning** — standard is Mini-Batch GD
+
+| Dataset Size | Recommendation |
+|---|---|
+| n < 10,000 | ✅ Batch GD is fine |
+| n > 100,000 | ⚠️ Consider Mini-Batch GD |
+| n > 1,000,000 | ❌ Use SGD or Mini-Batch GD |
+| Deep Learning | ❌ Always use Mini-Batch GD |
+
+---
+
+## Key Formulas — Quick Reference
+
+| Concept | Formula |
+|---|---|
+| Prediction | `ŷᵢ = β₀ + β₁x₁ + β₂x₂ + ... + βₘxₘ` |
+| Loss (MSE) | `L = (1/n) Σ(yᵢ − ŷᵢ)²` |
+| Intercept gradient | `∂L/∂β₀ = −(2/n) Σ(yᵢ − ŷᵢ)` |
+| Coefficient gradient | `∂L/∂βⱼ = −(2/n) Σ(yᵢ − ŷᵢ) · xᵢⱼ` |
+| Matrix gradient (all β) | `∂L/∂β = −(2/n) · Xᵀ · (Y − Ŷ)` |
+| Parameter update | `βⱼ_new = βⱼ_old − η · (∂L/∂βⱼ)` |
+| Intercept update (simplified) | `β₀ = β₀ + (2η/n) Σ(yᵢ − ŷᵢ)` |
+| Coefficient update (simplified) | `βⱼ = βⱼ + (2η/n) Σ(yᵢ − ŷᵢ) · xᵢⱼ` |
+
+---
+
+## Summary
+
+1. **Batch GD uses the entire dataset** to compute gradients before each update — one update per epoch.
+
+2. **The loss function is MSE:** `L = (1/n) Σ(yᵢ − ŷᵢ)²`
+
+3. **Partial derivatives** are derived via the chain rule:
+   - `∂L/∂β₀ = −(2/n) Σ(yᵢ − ŷᵢ)` → residual sum
+   - `∂L/∂βⱼ = −(2/n) Σ(yᵢ − ŷᵢ) · xᵢⱼ` → residual weighted by feature j
+
+4. **Matrix form** computes all gradients in one step: `∂L/∂β = −(2/n) Xᵀ(Y − Ŷ)`
+
+5. **Hyperparameters:**
+   - Learning rate η controls step size — too large diverges, too small crawls
+   - Epochs controls iteration count — tune until loss plateaus
+
+6. **Trade-offs:** Stable convergence but computationally expensive. Requires feature scaling. Not suitable for very large datasets.
+
+---
+
+## Next Steps
+
+After mastering Batch GD:
+
+1. **Stochastic Gradient Descent (SGD)** — updates after each single random sample; faster but noisy
+2. **Mini-Batch Gradient Descent** — updates after a small batch; the standard in deep learning
+3. **Advanced Optimizers** — Adam, RMSprop, Momentum — all build on these GD fundamentals

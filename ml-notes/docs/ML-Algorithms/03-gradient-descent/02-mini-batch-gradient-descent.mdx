@@ -1,0 +1,818 @@
+---
+title: Mini-Batch Gradient Descent — Complete Reference Guide
+description: A complete reference for Mini-Batch Gradient Descent — the middle ground between Batch GD and SGD. Covers intuition, full mathematical derivation with gradient proofs, pseudocode, Python implementation from scratch, sklearn's partial_fit approach, batch size selection, hyperparameter tuning, convergence analysis, and best practices.
+tags: [machine-learning, gradient-descent, mini-batch, optimization, deep-learning, python, numpy]
+---
+
+# Mini-Batch Gradient Descent — Complete Reference Guide
+
+## Introduction
+
+**Mini-Batch Gradient Descent (MBGD)** is an optimization algorithm that combines the strengths of both Batch GD and Stochastic GD. Instead of using the entire dataset (Batch GD) or a single random row (SGD) per update, it uses a **fixed-size subset (batch)** of the data — the best of both worlds.
+
+It is the **standard optimization algorithm used in deep learning** today. Every time you train a neural network, you are almost certainly using Mini-Batch GD under the hood.
+
+---
+
+## 1. The Three Gradient Descent Variants
+
+| Aspect | Batch GD | Stochastic GD | Mini-Batch GD |
+|---|---|---|---|
+| Data per update | Entire dataset | Single random sample | Subset of size B |
+| Updates per epoch | 1 | n | n / B |
+| Convergence path | Smooth, direct | Noisy, zigzag | Moderate — balanced |
+| Speed | Slow | Fast | Fast |
+| Memory usage | High | Low | Moderate |
+| GPU utilization | Inefficient | Inefficient | **Efficient** |
+| Escape local minima | Cannot | Can | Can |
+| Reproducibility | Deterministic | Random | Semi-random |
+| Deep learning suitability | Poor | Moderate | **Excellent** |
+
+---
+
+### Batch GD — Recap
+
+- **1 update per epoch** — sees entire dataset before any parameter change
+- Guaranteed convergence to global minimum for convex functions
+- Very slow for large datasets — computationally and memory-intensive
+- Best for: small, convex, fully in-memory datasets
+
+### SGD — Recap
+
+- **n updates per epoch** (one per row) — updates after every single sample
+- Very fast convergence overall
+- Highly noisy path — random zigzag toward minimum
+- Can escape local minima due to noise
+- Best for: large, non-convex datasets; online/streaming learning
+
+### Mini-Batch GD — The Middle Ground
+
+- **n / B updates per epoch** (where B = batch size)
+- Less noisy than SGD, faster than Batch GD
+- Takes advantage of **vectorized operations on batches**
+- Efficient on modern GPU hardware (parallel matrix ops on B rows)
+- Best for: virtually everything in deep learning practice
+
+---
+
+## 2. Mathematical Foundation
+
+### General Gradient Descent Update Rule
+
+For any model with parameters θ:
+
+```
+θ_new = θ_old − α · ∇θ J(θ)
+```
+
+| Symbol | Meaning |
+|---|---|
+| θ | Model parameters (weights w and bias b) |
+| α | Learning rate |
+| ∇θ J(θ) | Gradient of the cost function w.r.t. parameters |
+| J(θ) | Cost function (e.g., Mean Squared Error) |
+
+---
+
+### Linear Regression Setup
+
+**Hypothesis:**
+```
+ŷ = X · w + b
+```
+
+| Symbol | Shape | Meaning |
+|---|---|---|
+| X | (n × m) | Feature matrix — n samples, m features |
+| w | (m,) | Weight vector |
+| b | scalar | Bias / intercept |
+| ŷ | (n,) | Predicted values |
+
+**Cost function (MSE):**
+```
+J(w, b) = (1/n) Σᵢ₌₁ⁿ (yᵢ − ŷᵢ)²
+```
+
+---
+
+### Gradient Derivations
+
+#### Batch GD Gradients (all n samples)
+
+**Intercept (bias) gradient:**
+```
+∂J/∂b = −(2/n) Σᵢ₌₁ⁿ (yᵢ − ŷᵢ)
+```
+
+**Weight gradient:**
+```
+∂J/∂w = −(2/n) Σᵢ₌₁ⁿ (yᵢ − ŷᵢ) · Xᵢ
+```
+
+#### Mini-Batch GD Gradients (batch of size B)
+
+**Intercept gradient:**
+```
+∂J/∂b = −(2/B) Σᵢ∈batch (yᵢ − ŷᵢ)
+       = −2 · mean(y_batch − ŷ_batch)
+```
+
+**Weight gradient:**
+```
+∂J/∂w = −(2/B) Σᵢ∈batch (yᵢ − ŷᵢ) · Xᵢ
+       = −2 · (y_batch − ŷ_batch)ᵀ · X_batch
+```
+
+<Callout type="info">
+Mini-Batch GD gradients are identical in form to Batch GD — the only difference is the summation runs over **B rows** instead of all n rows. The `1/B` normalisation becomes `np.mean()` in code.
+</Callout>
+
+---
+
+### Full Step-by-Step Parameter Update
+
+**Step 1 — Compute predictions for the batch:**
+```
+ŷ_batch = X_batch · w + b
+```
+
+**Step 2 — Compute gradients:**
+```
+∇b = −2 · mean(y_batch − ŷ_batch)
+∇w = −2 · (y_batch − ŷ_batch)ᵀ · X_batch
+```
+
+**Step 3 — Update parameters:**
+```
+b_new = b_old − α · ∇b
+w_new = w_old − α · ∇w
+```
+
+---
+
+### Gradient Derivation Proof (Bias Term)
+
+Starting from the MSE loss over a batch of size B:
+
+```
+J = (1/B) Σᵢ₌₁ᴮ (yᵢ − ŷᵢ)²
+```
+
+Apply chain rule, ∂ŷᵢ/∂b = 1:
+
+```
+∂J/∂b = (1/B) Σᵢ₌₁ᴮ 2(yᵢ − ŷᵢ) · (−1)
+       = −(2/B) Σᵢ₌₁ᴮ (yᵢ − ŷᵢ)
+       = −2 · mean(y_batch − ŷ_batch)
+```
+
+### Gradient Derivation Proof (Weight Term)
+
+Apply chain rule, ∂ŷᵢ/∂wⱼ = xᵢⱼ:
+
+```
+∂J/∂wⱼ = −(2/B) Σᵢ₌₁ᴮ (yᵢ − ŷᵢ) · xᵢⱼ
+```
+
+In vector form across all features simultaneously:
+
+```
+∇w J = −2 · (y_batch − ŷ_batch)ᵀ · X_batch
+```
+
+---
+
+## 3. Mini-Batch GD Algorithm
+
+### Pseudocode
+
+```
+Input:
+  X_train  (n × m) — training features
+  y_train  (n,)    — training labels
+  B                — batch size
+  α                — learning rate
+  epochs           — number of full passes
+
+Output:
+  w  — optimized weights
+  b  — optimized bias
+
+Procedure:
+
+1. Initialize:
+     b ← 0
+     w ← [1, 1, …, 1]   (size m)
+
+2. n_batches ← floor(n / B)
+
+3. FOR epoch = 1 TO epochs:
+4.   FOR batch_idx = 1 TO n_batches:
+
+       a. Random sample B unique indices from [0, n−1]
+            idx ← random.sample(range(n), B)
+
+       b. Extract batch:
+            X_batch ← X_train[idx]    shape: (B × m)
+            y_batch ← y_train[idx]    shape: (B,)
+
+       c. Forward pass:
+            ŷ_batch ← X_batch · w + b  shape: (B,)
+
+       d. Compute gradients:
+            ∇b ← −2 · mean(y_batch − ŷ_batch)
+            ∇w ← −2 · (y_batch − ŷ_batch)ᵀ · X_batch
+
+       e. Update parameters:
+            b ← b − α · ∇b
+            w ← w − α · ∇w
+
+5. RETURN w, b
+```
+
+### Number of Updates per Epoch — Formula
+
+```
+n_batches = floor(n / B)
+updates_per_epoch = n_batches = floor(n / B)
+```
+
+**Example:** n = 1,000, B = 100
+
+```
+n_batches = floor(1000 / 100) = 10 batches
+→ 10 parameter updates per epoch
+```
+
+---
+
+## 4. Mini-Batch as a Generalisation of All GD Variants
+
+This is the most important conceptual insight: **Mini-Batch GD is the general form of gradient descent**. By changing `batch_size` alone, you get any of the three variants:
+
+| Batch Size (B) | Equivalent Algorithm | Updates per Epoch (n=1000) | Total Updates (100 epochs) |
+|---|---|---|---|
+| B = n = 1,000 | **Batch GD** | 1 | 100 |
+| B = 100 | Mini-Batch GD | 10 | 1,000 |
+| B = 50 | Mini-Batch GD | 20 | 2,000 |
+| B = 10 | Mini-Batch GD | 100 | 10,000 |
+| B = 1 | **SGD** | 1,000 | 100,000 |
+
+<Callout type="success">
+Batch GD and SGD are just special cases of Mini-Batch GD with `batch_size = n` and `batch_size = 1` respectively.
+</Callout>
+
+---
+
+## 5. Implementation from Scratch
+
+### Complete `MBGDRegressor` Class
+
+```python
+import numpy as np
+import random
+
+
+class MBGDRegressor:
+    """
+    Mini-Batch Gradient Descent Regressor for Linear Regression.
+
+    Parameters
+    ----------
+    batch_size    : int
+                    Number of samples per batch (B)
+    learning_rate : float, default=0.01
+                    Step size for parameter updates (α)
+    epochs        : int, default=100
+                    Number of complete passes through the training data
+
+    Attributes
+    ----------
+    coef_         : ndarray of shape (n_features,)
+                    Learned weights after training
+    intercept_    : float
+                    Learned bias after training
+    """
+
+    def __init__(self, batch_size, learning_rate=0.01, epochs=100):
+        self.coef_      = None
+        self.intercept_ = None
+        self.lr         = learning_rate
+        self.epochs     = epochs
+        self.batch_size = batch_size
+
+    def fit(self, X_train, y_train):
+        """
+        Train using Mini-Batch Gradient Descent.
+
+        Parameters
+        ----------
+        X_train : ndarray of shape (n_samples, n_features)
+        y_train : ndarray of shape (n_samples,)
+        """
+        # Step 1 — Initialize parameters
+        self.intercept_ = 0
+        self.coef_      = np.ones(X_train.shape[1])
+
+        n_samples = X_train.shape[0]
+
+        # Step 2 — Number of batches per epoch
+        # e.g. n=353, batch_size=10 → 35 batches per epoch
+        n_batches = int(n_samples / self.batch_size)
+
+        # Step 3 — Training loop
+        for epoch in range(self.epochs):
+            for batch_idx in range(n_batches):
+
+                # Step 4a — Randomly sample B UNIQUE indices (no replacement)
+                idx = random.sample(range(n_samples), self.batch_size)
+
+                # Step 4b — Extract batch
+                X_batch = X_train[idx]   # shape: (B, m)
+                y_batch = y_train[idx]   # shape: (B,)
+
+                # Step 4c — Forward pass: ŷ = X·w + b
+                y_hat = np.dot(X_batch, self.coef_) + self.intercept_
+
+                # Step 4d — Compute gradients
+                # ∇b = −2 · mean(y_batch − ŷ_batch)
+                intercept_der = -2 * np.mean(y_batch - y_hat)
+
+                # ∇w = −2 · (y_batch − ŷ_batch)ᵀ · X_batch
+                coef_der = -2 * np.dot((y_batch - y_hat), X_batch)
+
+                # Step 4e — Update parameters
+                self.intercept_ = self.intercept_ - (self.lr * intercept_der)
+                self.coef_      = self.coef_      - (self.lr * coef_der)
+
+        return self
+
+    def predict(self, X_test):
+        """
+        Predict using ŷ = X·w + b
+
+        Parameters
+        ----------
+        X_test : ndarray of shape (n_samples, n_features)
+
+        Returns
+        -------
+        ndarray of shape (n_samples,)
+        """
+        return np.dot(X_test, self.coef_) + self.intercept_
+```
+
+---
+
+### Step-by-Step Code Explanation
+
+**Initialization:**
+```python
+self.intercept_ = 0
+self.coef_      = np.ones(X_train.shape[1])
+```
+Mathematical form: `b₀ = 0`, `w₀ = [1, 1, …, 1] ∈ ℝᵐ`
+
+---
+
+**Number of batches:**
+```python
+n_batches = int(n_samples / self.batch_size)
+```
+Example: n_samples = 353, batch_size = 10 → 35 batches per epoch (inner loop runs 35 times).
+
+---
+
+**Random batch selection:**
+```python
+idx = random.sample(range(n_samples), self.batch_size)
+```
+Uses `random.sample()` — generates `batch_size` **unique** indices with no replacement. Unlike SGD's `np.random.randint` which can repeat the same row, `random.sample` guarantees every row in a batch is different.
+
+---
+
+**Forward pass:**
+```python
+y_hat = np.dot(X_batch, self.coef_) + self.intercept_
+```
+
+Matrix dimensions:
+```
+X_batch : (B × m)
+coef_   : (m,)
+y_hat   : (B,)   ← vectorised over the whole batch at once
+```
+
+---
+
+**Gradient computation:**
+```python
+intercept_der = -2 * np.mean(y_batch - y_hat)
+coef_der      = -2 * np.dot((y_batch - y_hat), X_batch)
+```
+
+| Line | Mathematical form | Shape |
+|---|---|---|
+| `np.mean(y_batch - y_hat)` | `(1/B) Σ(yᵢ − ŷᵢ)` | scalar |
+| `np.dot((y_batch - y_hat), X_batch)` | `(y−ŷ)ᵀ · X_batch` | (m,) |
+
+**Key difference from SGD:** SGD uses a single scalar error; Mini-Batch uses `np.mean()` over B errors — this averaging is what **reduces gradient variance**.
+
+---
+
+**Parameter update:**
+```python
+self.intercept_ = self.intercept_ - (self.lr * intercept_der)
+self.coef_      = self.coef_      - (self.lr * coef_der)
+```
+Mathematical form: `b ← b − α·∇b`, `w ← w − α·∇w`
+
+---
+
+### Full Usage Example
+
+```python
+from sklearn.datasets import load_diabetes
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import r2_score
+from sklearn.preprocessing import StandardScaler
+
+# Load and scale data
+X, y = load_diabetes(return_X_y=True)
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y, test_size=0.2, random_state=2
+)
+
+scaler = StandardScaler()
+X_train = scaler.fit_transform(X_train)
+X_test  = scaler.transform(X_test)
+
+# batch_size = n_samples / 50 → ~7 samples per batch
+mbr = MBGDRegressor(
+    batch_size=int(X_train.shape[0] / 50),
+    learning_rate=0.01,
+    epochs=100
+)
+mbr.fit(X_train, y_train)
+
+y_pred = mbr.predict(X_test)
+print(f"R² Score:     {r2_score(y_test, y_pred):.4f}")
+print(f"Intercept:    {mbr.intercept_:.4f}")
+print(f"Coefficients: {mbr.coef_}")
+```
+
+---
+
+## 6. Using Scikit-Learn
+
+Sklearn's `SGDRegressor` has no direct `batch_size` parameter. The trick is to use `partial_fit()` — which performs one gradient descent step on whatever data you pass to it.
+
+### Implementation via `partial_fit()`
+
+```python
+from sklearn.linear_model import SGDRegressor
+from sklearn.datasets import load_diabetes
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import r2_score
+import random
+
+X, y = load_diabetes(return_X_y=True)
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y, test_size=0.2, random_state=2
+)
+
+# Initialize SGDRegressor with constant learning rate
+sgd = SGDRegressor(
+    learning_rate='constant',
+    eta0=0.1
+)
+
+batch_size = 35
+epochs     = 100
+
+for epoch in range(epochs):
+    # Manually select a random batch
+    idx = random.sample(range(X_train.shape[0]), batch_size)
+
+    # partial_fit performs ONE gradient step on this batch
+    sgd.partial_fit(X_train[idx], y_train[idx])
+
+y_pred = sgd.predict(X_test)
+print(f"R² Score:     {r2_score(y_test, y_pred):.4f}")
+print(f"Coefficients: {sgd.coef_}")
+print(f"Intercept:    {sgd.intercept_}")
+```
+
+### Key Points About `partial_fit()`
+
+| Aspect | Detail |
+|---|---|
+| Purpose | Performs one gradient step on the provided samples |
+| Internal behaviour | Treats the passed data as one complete "dataset" update |
+| Workaround | By passing a batch subset, we simulate mini-batch behaviour |
+| Advantage | Enables incremental / online learning — model updates as new data arrives |
+
+### Custom vs Sklearn — Side-by-Side
+
+```python
+# ── Custom implementation ─────────────────────────────────────────────
+mbr = MBGDRegressor(
+    batch_size=int(X_train.shape[0] / 50),
+    learning_rate=0.01,
+    epochs=100
+)
+mbr.fit(X_train, y_train)
+
+# ── sklearn via partial_fit ───────────────────────────────────────────
+sgd = SGDRegressor(learning_rate='constant', eta0=0.1)
+for i in range(100):
+    idx = random.sample(range(X_train.shape[0]), 35)
+    sgd.partial_fit(X_train[idx], y_train[idx])
+```
+
+---
+
+## 7. Hyperparameter Tuning
+
+### Key Hyperparameters
+
+| Hyperparameter | Effect | Typical Values |
+|---|---|---|
+| `batch_size` | Controls updates per epoch and gradient noise | 16, 32, 64, 128, 256 |
+| `learning_rate` | Controls step size | 0.0001 to 0.1 |
+| `epochs` | Controls total training time | 50 to 1,000+ |
+
+---
+
+### Batch Size Selection Guide
+
+| Batch Size | Updates/Epoch | Characteristics | Best Use Case |
+|---|---|---|---|
+| 1 | n | Very noisy, fastest iteration | Online learning, streaming data |
+| 16–32 | n/16 to n/32 | Good balance, GPU-efficient | Deep learning, neural networks |
+| 64–128 | n/64 to n/128 | More stable gradients | Standard training |
+| 256–512 | n/256 to n/512 | Very stable, needs more epochs | Large datasets |
+| n (full) | 1 | Most stable, slowest | Small datasets, precise training |
+
+<Callout type="tip">
+**Start with batch_size = 32.** It's the most common default in deep learning frameworks (PyTorch, Keras) for a reason — it balances gradient noise, GPU memory efficiency, and convergence speed well across a wide range of problems.
+</Callout>
+
+---
+
+### Learning Rate Impact
+
+| Learning Rate | Effect | Observable Symptom |
+|---|---|---|
+| Too high (> 0.1) | Overshooting minimum | Loss oscillates or increases |
+| Optimal (0.001–0.01) | Good convergence | Steady, consistent loss decrease |
+| Too low (< 0.0001) | Slow convergence | Extremely slow improvement |
+
+---
+
+### Practical Tuning Workflow
+
+**Step 1 — Start with conservative defaults:**
+```python
+batch_size    = 32
+learning_rate = 0.01
+epochs        = 100
+```
+
+**Step 2 — Grid search over key values:**
+```python
+batch_sizes    = [8, 16, 32, 64, 128]
+learning_rates = [0.001, 0.01, 0.1]
+```
+
+**Step 3 — Apply learning rate scheduling to settle near the minimum:**
+```python
+# Time-based decay
+lr = lr_initial * (1 / (1 + decay_rate * epoch))
+```
+
+**Step 4 — Tune based on what you observe:**
+
+| Observation | Action |
+|---|---|
+| Training is too noisy | Increase `batch_size` |
+| Loss oscillates at the end | Decrease `learning_rate` or add LR decay |
+| Loss still decreasing at last epoch | Increase `epochs` |
+| Train loss low, val loss high | Reduce `epochs` (overfitting) |
+
+---
+
+## 8. Why Mini-Batch Oscillates Less Than SGD
+
+This is the core mathematical reason Mini-Batch beats SGD in stability.
+
+**SGD problem:** A single random sample has high variance as a gradient estimate. Even after finding the minimum, SGD keeps jumping around because each single-sample gradient can point in a completely different direction.
+
+**Mini-Batch solution:** Averaging over B samples reduces gradient variance by a factor of √B:
+
+```
+Var(∇_mini-batch) ≈ Var(∇_single) / B
+```
+
+**Example:** With B = 64:
+```
+Variance reduced by factor of 64 → std deviation reduced by factor of 8
+```
+
+The gradient estimates are 8× more reliable. This is why Mini-Batch converges more smoothly and reliably, while still maintaining the speed advantage over Batch GD.
+
+---
+
+## 9. Convergence Behaviour
+
+| Algorithm | Path Description | Visual Behaviour |
+|---|---|---|
+| Batch GD | Smooth, straight line toward minimum | Direct descent |
+| SGD | Zigzag, high oscillation | Random walk with directional drift |
+| Mini-Batch GD | Moderate zigzag, trending toward minimum | Controlled oscillation |
+
+```
+Loss
+ │
+ │╲   Batch GD           ← smooth
+ │ ╲___________________
+ │
+ │╲  Mini-Batch GD       ← moderate oscillation
+ │ ╲╱╲╱╲_______________
+ │
+ │╲  SGD                 ← noisy oscillation
+ │ ╲╱╲╱╲╱╲╱╲╱╲╱~~ ~ ~
+ └─────────────────────► epochs
+```
+
+---
+
+## 10. Advantages and Disadvantages
+
+### Advantages
+
+**Computational efficiency:**
+- Vectorized operations on batches → leverages BLAS/GPU parallel processing
+- Much more efficient than one sample at a time (SGD)
+- Batches of 32–256 saturate modern GPU cores efficiently
+
+**Noise reduction:**
+- Averaging gradients reduces variance → more stable than SGD
+- Still maintains some beneficial noise (helps escape sharp minima)
+
+**Better generalisation:**
+- Finds **flatter minima** (lower sharpness) → better generalisation to unseen data
+- The noise acts as an implicit regulariser
+
+**Flexibility:**
+- `batch_size` is a tunable lever between speed and stability
+- Same algorithm, adjust one parameter to go from near-SGD to near-Batch GD
+
+---
+
+### Disadvantages
+
+**Hyperparameter sensitivity:**
+- Requires tuning `batch_size` and `learning_rate`
+- Different datasets and architectures may need very different settings
+
+**Not guaranteed optimal:**
+- May not reach the exact minimum
+- Oscillates around the minimum without LR decay
+
+**Computational overhead:**
+- Random sampling and shuffling adds small overhead per epoch
+- Negligible in practice but worth noting
+
+---
+
+## 11. Common Mistakes and How to Fix Them
+
+| Mistake | Problem | Fix |
+|---|---|---|
+| Not shuffling data | Systematic bias in batch selection | Random sample every epoch |
+| Fixed learning rate | Oscillation near minimum | Add learning rate scheduling |
+| Batch size too large | Slow convergence, wastes memory | Reduce batch size |
+| Batch size too small | Noisy, unstable updates | Increase batch size |
+| No feature scaling | Uneven gradient magnitudes per feature | Standardize with `StandardScaler` |
+| Ignoring gradient clipping | Exploding gradients in deep nets | Clip gradient norm |
+
+---
+
+## 12. Recommended Workflow
+
+### Full Pipeline with Best Practices
+
+```python
+from sklearn.preprocessing import StandardScaler
+from sklearn.datasets import load_diabetes
+from sklearn.model_selection import train_test_split, KFold
+from sklearn.metrics import r2_score
+import numpy as np
+
+# 1. Load data
+X, y = load_diabetes(return_X_y=True)
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y, test_size=0.2, random_state=2
+)
+
+# 2. Always scale features before gradient descent
+scaler      = StandardScaler()
+X_train_sc  = scaler.fit_transform(X_train)
+X_test_sc   = scaler.transform(X_test)
+
+# 3. Cross-validated R² (scale inside each fold — no leakage)
+kf = KFold(n_splits=5, shuffle=True, random_state=2)
+cv_scores = []
+
+for train_idx, val_idx in kf.split(X_train):
+    X_tr, X_val = X_train[train_idx], X_train[val_idx]
+    y_tr, y_val = y_train[train_idx], y_train[val_idx]
+
+    scaler_cv = StandardScaler()
+    X_tr_sc  = scaler_cv.fit_transform(X_tr)
+    X_val_sc = scaler_cv.transform(X_val)
+
+    mbr_cv = MBGDRegressor(batch_size=32, learning_rate=0.01, epochs=100)
+    mbr_cv.fit(X_tr_sc, y_tr)
+    cv_scores.append(r2_score(y_val, mbr_cv.predict(X_val_sc)))
+
+cv_scores = np.array(cv_scores)
+print(f"CV R² scores: {cv_scores.round(4)}")
+print(f"Mean CV R²:   {cv_scores.mean():.4f} (+/- {cv_scores.std():.4f})")
+
+# 4. Fit on full training set and evaluate on hold-out test set
+mbr = MBGDRegressor(
+    batch_size    = 32,
+    learning_rate = 0.01,
+    epochs        = 100
+)
+mbr.fit(X_train_sc, y_train)
+y_pred = mbr.predict(X_test_sc)
+print(f"Test R²: {r2_score(y_test, y_pred):.4f}")
+
+# 5. If noisy → increase batch_size
+# 6. If oscillating → reduce learning_rate
+# 7. If not converged → increase epochs
+```
+
+---
+
+## 13. Three GD Variants — Final Master Comparison
+
+| Aspect | Batch GD | SGD | Mini-Batch GD |
+|---|---|---|---|
+| Data per update | All n rows | 1 row | B rows |
+| Updates per epoch | 1 | n | n/B |
+| Gradient accuracy | Exact | Noisy | Balanced |
+| Gradient variance | Zero | High | `Var_single / B` |
+| Convergence path | Smooth | Zigzag | Moderate zigzag |
+| Memory usage | Entire dataset | 1 row | B rows |
+| GPU efficiency | Low | Low | **High** |
+| Local minima escape | No | Yes | Yes |
+| Best batch size | B = n | B = 1 | B = 32–256 |
+| sklearn class | `LinearRegression` | `SGDRegressor` | `SGDRegressor` + `partial_fit` |
+| Used in deep learning | Rarely | Sometimes | **Always** |
+
+---
+
+## Key Formulas — Quick Reference
+
+| Concept | Formula |
+|---|---|
+| Prediction (batch) | `ŷ_batch = X_batch · w + b` |
+| Loss (MSE over batch) | `J = (1/B) Σᵢ∈batch (yᵢ − ŷᵢ)²` |
+| Bias gradient | `∇b = −2 · mean(y_batch − ŷ_batch)` |
+| Weight gradient | `∇w = −2 · (y_batch − ŷ_batch)ᵀ · X_batch` |
+| Bias update | `b ← b − α · ∇b` |
+| Weight update | `w ← w − α · ∇w` |
+| Number of batches | `n_batches = floor(n / B)` |
+| Updates per epoch | `n_batches = floor(n / B)` |
+| Variance reduction | `Var(∇_mini-batch) ≈ Var(∇_single) / B` |
+
+---
+
+## Key Takeaways
+
+| # | Takeaway |
+|---|---|
+| 1 | Mini-Batch GD uses **B random samples** per update — between SGD's 1 and Batch GD's n |
+| 2 | **n/B updates per epoch** — more than Batch GD (1), fewer than SGD (n) |
+| 3 | Gradient variance is **reduced by factor B** vs SGD — more stable convergence |
+| 4 | It is the **general form** of gradient descent — Batch and SGD are special cases |
+| 5 | **GPU-efficient** — batch matrix operations saturate GPU cores better than single samples |
+| 6 | The standard choice for **all deep learning** — PyTorch, TensorFlow, Keras all use it |
+| 7 | **batch_size = 32** is the safe default starting point for most problems |
+| 8 | Always **scale features** before running any gradient-based optimizer |
+
+---
+
+## Next Steps
+
+After mastering Mini-Batch GD:
+
+1. **Learning Rate Schedules** — step decay, cosine annealing, warm restarts
+2. **Momentum** — accumulate gradient history to accelerate convergence
+3. **RMSprop** — adaptive per-parameter learning rates
+4. **Adam** — combines momentum + RMSprop; the most common deep learning optimizer
+5. **Polynomial Regression** (Chapter 98) — extend linear regression to non-linear relationships

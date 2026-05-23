@@ -1,0 +1,227 @@
+# 🧠 ML Algorithm Roadmap
+### For Software Engineers (1 Month)
+
+> **Scope:** Algorithms only — assumes you already know Python, data wrangling, and basic math.
+> **Background:** 3 years software engineering experience.
+
+---
+
+## 🗓️ Overview
+
+| Phase | Focus | Duration |
+|-------|-------|----------|
+| Phase 1 | Foundations | Week 1–2 |
+| Phase 2 | Workhorses | Week 2–3 |
+| Phase 3 | Evaluation & Regularization | Week 3–4 |
+
+---
+
+## 📦 Phase 1 — The Foundations
+> *Build the mental models everything else depends on.*
+
+**Duration:** Week 1–2
+
+### 1. Linear Regression
+The first algorithm everyone learns — and the one that teaches you the most.
+
+**Focus on:**
+- Simple & Multiple Regression
+- Cost function (MSE) and what minimizing it means
+- Gradient Descent — the engine behind nearly all ML
+
+```python
+from sklearn.linear_model import LinearRegression
+model = LinearRegression()
+model.fit(X_train, y_train)
+```
+
+> 💡 **Why first?** Every concept here — gradients, loss, prediction — recurs in every other algorithm.
+
+---
+
+### 2. Logistic Regression
+Your entry point into **classification**.
+
+**Focus on:**
+- Sigmoid function and probability outputs
+- Decision thresholds (why 0.5 isn't always right)
+- Log loss / Binary Cross-Entropy
+
+> 💡 **Key insight:** Despite the name, this is a *classification* algorithm. It teaches you how models express uncertainty.
+
+---
+
+### 3. K-Nearest Neighbors (KNN)
+A contrast to regression — pure **distance-based** thinking.
+
+**Focus on:**
+- Distance metrics: Euclidean, Manhattan
+- Choosing `k` and why it matters
+- Limitations on large datasets
+
+> 💡 **Why here (not later)?** KNN is conceptually simple and creates a sharp contrast to the rule-based thinking in Decision Trees. Great for simple recommendation prototypes.
+
+---
+
+### 4. Decision Trees
+Where ML becomes **interpretable**.
+
+**Focus on:**
+- Gini impurity vs. Entropy (information gain)
+- How splits are chosen
+- Visualizing and reading a tree
+
+> 💡 **Key insight:** You can *see* why the model made a decision. This interpretability is rare — appreciate it before moving to black-box models.
+
+---
+
+### 🧩 Concept Checkpoint: Bias–Variance Tradeoff
+> **Do not skip this.** Before Phase 2 makes sense, you must understand this.
+
+- **High Bias** = model is too simple, underfits
+- **High Variance** = model memorizes training data, overfits
+- Ensembles (Phase 2) exist *specifically* to fix the variance problem in Decision Trees
+
+---
+
+## ⚙️ Phase 2 — The Workhorses
+> *The algorithms you'll actually ship to production.*
+
+**Duration:** Week 2–3
+
+### 5. Random Forest
+The most **plug-and-play** algorithm in supervised ML.
+
+**Focus on:**
+- Bagging (Bootstrap Aggregating)
+- Feature importance scores
+- Why it fixes Decision Tree overfitting
+
+```python
+from sklearn.ensemble import RandomForestClassifier
+model = RandomForestClassifier(n_estimators=100, random_state=42)
+```
+
+> 💡 **Production note:** Handles missing values and messy data gracefully. Your default starting point for tabular data.
+
+---
+
+### 6. Naive Bayes
+The **specialist** — built for text.
+
+**Focus on:**
+- Bayes' Theorem (conditional probability)
+- The "naive" independence assumption and why it works anyway
+- Use cases: spam filters, document taggers, intent classifiers
+
+> 💡 **When to reach for it:** Any time your features are word counts, TF-IDF vectors, or bag-of-words. Fast, interpretable, surprisingly effective.
+
+---
+
+### 7. Gradient Boosting (XGBoost / LightGBM / CatBoost)
+The **competition winner** and production standard for structured data.
+
+**Focus on:**
+- Boosting vs. Bagging (sequential vs. parallel)
+- Learning rate and n_estimators tradeoff
+- XGBoost first, then LightGBM for speed
+
+```python
+import xgboost as xgb
+model = xgb.XGBClassifier(n_estimators=200, learning_rate=0.05, max_depth=4)
+```
+
+> ⚠️ **Time budget:** Allocate a **full week** here. Tuning Gradient Boosting is an art. Don't rush it.
+
+| Library | Best For |
+|---------|----------|
+| XGBoost | Accuracy, most documented |
+| LightGBM | Large datasets, speed |
+| CatBoost | Categorical-heavy data |
+
+---
+
+## 📏 Phase 3 — Evaluation & Regularization
+> *Having models is useless if you can't evaluate or defend them.*
+
+**Duration:** Week 3–4
+
+### 8. Cross-Validation & Train/Val/Test Split
+
+**Focus on:**
+- Why a single train-test split lies to you
+- K-Fold cross-validation
+- Stratified splits for imbalanced classes
+
+```python
+from sklearn.model_selection import cross_val_score, StratifiedKFold
+cv = StratifiedKFold(n_splits=5)
+scores = cross_val_score(model, X, y, cv=cv, scoring='f1')
+```
+
+> 💡 **This is non-negotiable.** Every metric you report should come from cross-validation, not a single split.
+
+---
+
+### 9. Evaluation Metrics
+
+Don't default to accuracy. Know when to use what:
+
+| Metric | Use When |
+|--------|----------|
+| Accuracy | Classes are balanced |
+| Precision | False positives are costly (e.g., spam filter) |
+| Recall | False negatives are costly (e.g., fraud detection) |
+| F1 Score | You need a balance of both |
+| ROC-AUC | Ranking/probability quality matters |
+
+---
+
+### 10. Ridge & Lasso Regression (Regularization)
+Not new algorithms — **upgrades** to Linear Regression.
+
+**Focus on:**
+- L2 (Ridge): Shrinks all coefficients, keeps all features
+- L1 (Lasso): Zeroes out weak features (automatic feature selection)
+- The `alpha` hyperparameter
+
+> 💡 **Framing tip:** Think of these as a "penalty dial" you add to Linear Regression to stop it from memorizing noise.
+
+---
+
+## 🗺️ Full Algorithm Map
+
+```
+Week 1        Week 2            Week 3              Week 4
+────────────  ────────────────  ──────────────────  ──────────────────
+Linear Reg  → Logistic Reg   → Random Forest     → Cross-Validation
+KNN         → Decision Trees → Naive Bayes       → Metrics Deep-Dive
+              Bias-Variance   → Gradient Boosting → Ridge / Lasso
+                                (full week)
+```
+
+---
+
+## 📚 Recommended Resources
+
+| Resource | For |
+|----------|-----|
+| [Hands-On ML (Aurélien Géron)](https://www.oreilly.com/library/view/hands-on-machine-learning/9781492032632/) | Best end-to-end book |
+| [StatQuest (YouTube)](https://www.youtube.com/@statquest) | Visual intuition for every algorithm |
+| [Kaggle Learn](https://www.kaggle.com/learn) | Practical, fast exercises |
+| [XGBoost Docs](https://xgboost.readthedocs.io/) | Official parameter reference |
+
+---
+
+## ✅ End-of-Month Checklist
+
+- [ ] Can explain bias-variance tradeoff without notes
+- [ ] Trained and evaluated all 7 algorithms on a real dataset
+- [ ] Used cross-validation instead of a single split
+- [ ] Reported F1 / ROC-AUC, not just accuracy
+- [ ] Tuned at least one XGBoost model with `GridSearchCV` or `Optuna`
+- [ ] Built a simple text classifier with Naive Bayes
+
+---
+
+> **Next step after this roadmap:** Neural Networks & Deep Learning (start with fast.ai or PyTorch for 3 weeks) — but only after you're comfortable explaining *why* Gradient Boosting outperforms a single Decision Tree.
