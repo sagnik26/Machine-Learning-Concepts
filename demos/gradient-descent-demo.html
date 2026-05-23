@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Gradient Descent</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Segoe UI',system-ui,sans-serif;background:#0f1117;color:#e2e8f0;padding:20px}
+  h2{font-size:15px;font-weight:600;color:#94a3b8;margin-bottom:14px;letter-spacing:.05em;text-transform:uppercase}
+  .controls{display:flex;gap:12px;margin-bottom:12px;flex-wrap:wrap;align-items:center}
+  .ctrl{display:flex;align-items:center;gap:8px;flex:1;min-width:180px}
+  label{font-size:13px;color:#64748b;white-space:nowrap}
+  input[type=range]{flex:1;accent-color:#f59e0b}
+  .val{font-size:13px;font-weight:600;color:#e2e8f0;min-width:36px}
+  .cards{display:flex;gap:10px;margin-bottom:12px}
+  .card{flex:1;background:#1e2533;border:1px solid #2d3748;border-radius:8px;padding:10px 14px}
+  .card-label{font-size:11px;color:#64748b;margin-bottom:4px}
+  .card-val{font-size:16px;font-weight:600;color:#e2e8f0}
+  canvas{width:100%;border-radius:8px;border:1px solid #2d3748;display:block}
+  button{background:#1e2533;border:1px solid #475569;color:#94a3b8;padding:6px 16px;border-radius:6px;font-size:13px;cursor:pointer;transition:background .15s;white-space:nowrap}
+  button:hover{background:#2d3748}
+  .status{margin-top:8px;font-size:12px;color:#64748b;min-height:16px}
+</style>
+</head>
+<body>
+<h2>Gradient descent visualised</h2>
+<div class="controls">
+  <div class="ctrl">
+    <label>Learning rate</label>
+    <input type="range" id="lr" min="0.01" max="0.95" step="0.01" value="0.15"/>
+    <span class="val" id="lr-val">0.15</span>
+  </div>
+  <button onclick="reset()">Reset</button>
+  <button onclick="stepOnce()">Step →</button>
+  <button onclick="autoRun()" id="run-btn">Run ▶</button>
+</div>
+<div class="cards">
+  <div class="card"><div class="card-label">Current weight (m)</div><div class="card-val" id="wv">5.200</div></div>
+  <div class="card"><div class="card-label">Loss (MSE)</div><div class="card-val" id="lv">—</div></div>
+  <div class="card"><div class="card-label">Steps</div><div class="card-val" id="sv">0</div></div>
+</div>
+<canvas id="c" width="700" height="300"></canvas>
+<div class="status" id="status"></div>
+<script>
+const cv=document.getElementById('c'),ctx=cv.getContext('2d');
+const W=700,H=300,pad=48;
+const TRUE_M=2.5;
+function loss(m){return(m-TRUE_M)**2*8+10}
+function grad(m){return 2*(m-TRUE_M)*8}
+const mMn=-1,mMx=6;
+function tx(m){return pad+(m-mMn)/(mMx-mMn)*(W-2*pad)}
+function ty(l){return H-pad-Math.min((l/180)*(H-2*pad),H-2*pad-2)}
+let m=5.2,steps=0,running=false,timer=null,trail=[];
+function draw(){
+  ctx.clearRect(0,0,W,H);
+  ctx.strokeStyle='#1e2d45';ctx.lineWidth=1;
+  for(let mv=mMn;mv<=mMx;mv++){ctx.beginPath();ctx.moveTo(tx(mv),ty(0));ctx.lineTo(tx(mv),ty(180));ctx.stroke()}
+  ctx.strokeStyle='#2563eb';ctx.lineWidth=2.5;ctx.globalAlpha=0.5;
+  ctx.beginPath();
+  for(let i=0;i<=200;i++){const mv=mMn+i*(mMx-mMn)/200,lv=loss(mv);i===0?ctx.moveTo(tx(mv),ty(lv)):ctx.lineTo(tx(mv),ty(lv))}
+  ctx.stroke();ctx.globalAlpha=1;
+  ctx.strokeStyle='rgba(34,197,94,0.4)';ctx.lineWidth=1;ctx.setLineDash([4,4]);
+  ctx.beginPath();ctx.moveTo(tx(TRUE_M),ty(0));ctx.lineTo(tx(TRUE_M),ty(loss(TRUE_M)));ctx.stroke();ctx.setLineDash([]);
+  ctx.fillStyle='rgba(34,197,94,0.6)';ctx.font='11px sans-serif';ctx.textAlign='center';ctx.fillText('minimum',tx(TRUE_M),ty(0)+14);
+  if(trail.length>1)for(let i=1;i<trail.length;i++){
+    const a=i/trail.length;
+    ctx.strokeStyle=`rgba(251,146,60,${a*0.55})`;ctx.lineWidth=1.5;
+    ctx.beginPath();ctx.moveTo(tx(trail[i-1].m),ty(trail[i-1].l));ctx.lineTo(tx(trail[i].m),ty(trail[i].l));ctx.stroke();
+  }
+  const l=loss(m),g=grad(m),sp=0.8;
+  ctx.strokeStyle='rgba(239,68,68,0.5)';ctx.lineWidth=1.5;ctx.setLineDash([3,3]);
+  ctx.beginPath();ctx.moveTo(tx(m-sp),ty(l-g*sp));ctx.lineTo(tx(m+sp),ty(l+g*sp));ctx.stroke();ctx.setLineDash([]);
+  ctx.beginPath();ctx.arc(tx(m),ty(l),8,0,Math.PI*2);
+  ctx.fillStyle='#f59e0b';ctx.fill();ctx.strokeStyle='#78350f';ctx.lineWidth=1.5;ctx.stroke();
+  ctx.fillStyle='#475569';ctx.font='11px sans-serif';ctx.textAlign='center';
+  for(let mv=mMn;mv<=mMx;mv++)ctx.fillText(mv,tx(mv),H-8);
+  ctx.fillText('Weight value (m)',W/2,H+2);
+  ctx.save();ctx.translate(14,H/2);ctx.rotate(-Math.PI/2);ctx.fillText('Loss (MSE)',0,0);ctx.restore();
+  document.getElementById('wv').textContent=m.toFixed(3);
+  document.getElementById('lv').textContent=loss(m).toFixed(2);
+  document.getElementById('sv').textContent=steps;
+}
+function stepOnce(){
+  const lr=+document.getElementById('lr').value,g=grad(m);
+  trail.push({m,l:loss(m)});m=m-lr*g;steps++;
+  const converged=Math.abs(g)<0.02;
+  document.getElementById('status').textContent=converged
+    ?'✓ Converged — gradient ≈ 0, minimum found!'
+    :`Gradient = ${g.toFixed(2)}  →  step = −${lr} × ${g.toFixed(2)} = ${(-lr*g).toFixed(3)}`;
+  draw();
+  if(converged&&running){clearInterval(timer);running=false;document.getElementById('run-btn').textContent='Run ▶'}
+}
+function reset(){m=5.2;steps=0;trail=[];running=false;clearInterval(timer);document.getElementById('run-btn').textContent='Run ▶';document.getElementById('status').textContent='';draw()}
+function autoRun(){
+  if(running){clearInterval(timer);running=false;document.getElementById('run-btn').textContent='Run ▶';return}
+  running=true;document.getElementById('run-btn').textContent='Pause ⏸';timer=setInterval(stepOnce,180);
+}
+document.getElementById('lr').addEventListener('input',e=>{document.getElementById('lr-val').textContent=(+e.target.value).toFixed(2)});
+draw();
+</script>
+</body>
+</html>

@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Model Evaluation</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Segoe UI',system-ui,sans-serif;background:#0f1117;color:#e2e8f0;padding:20px}
+  h2{font-size:15px;font-weight:600;color:#94a3b8;margin-bottom:14px;letter-spacing:.05em;text-transform:uppercase}
+  .tabs{display:flex;gap:8px;margin-bottom:12px}
+  button{background:#1e2533;border:1px solid #2d3748;color:#64748b;padding:6px 16px;border-radius:6px;font-size:13px;cursor:pointer;transition:all .15s}
+  button:hover{background:#2d3748;color:#e2e8f0}
+  button.active{background:#1e3a5f;border-color:#3b82f6;color:#60a5fa}
+  .cards{display:flex;gap:10px;margin-bottom:12px}
+  .card{flex:1;background:#1e2533;border:1px solid #2d3748;border-radius:8px;padding:10px 14px}
+  .card-label{font-size:11px;color:#64748b;margin-bottom:4px}
+  .card-val{font-size:18px;font-weight:600}
+  .card-sub{font-size:11px;color:#475569;margin-top:2px}
+  canvas{width:100%;border-radius:8px;border:1px solid #2d3748;display:block}
+  .insight{margin-top:10px;font-size:13px;color:#64748b;padding:10px 14px;background:#1e2533;border-radius:8px;border-left:3px solid #3b82f6}
+</style>
+</head>
+<body>
+<h2>Predicted vs actual</h2>
+<div class="tabs">
+  <button class="active" onclick="show('good',this)">Good model</button>
+  <button onclick="show('bad',this)">Bad model</button>
+  <button onclick="show('over',this)">Overfit model</button>
+</div>
+<div class="cards" id="cards"></div>
+<canvas id="c" width="700" height="300"></canvas>
+<div class="insight" id="insight"></div>
+<script>
+const actual=[72,105,130,160,195,210,265,270,315,340,380,400,430,460,500];
+const models={
+  good:{preds:[78,98,138,155,200,215,258,275,320,335,375,408,425,455,495],insight:'Predictions cluster tightly around the diagonal. R² near 1 means the model explains most of the variance.'},
+  bad:{preds:[180,170,200,190,210,200,240,220,260,250,280,270,300,290,310],insight:'Predictions barely respond to actual values. Low R² (near 0) means the model learned almost nothing — barely better than always predicting the mean.'},
+  over:{preds:[72,105,130,160,195,210,265,270,315,340,380,400,430,460,500].map((v,i)=>v+(i%3===0?8:i%3===1?-6:3)),insight:'Perfect on training data, but real test data will show much higher error. Overfitting = memorising noise instead of learning the true pattern.'}
+};
+function metrics(preds){
+  const n=actual.length,mae=actual.reduce((s,a,i)=>s+Math.abs(a-preds[i]),0)/n;
+  const rmse=Math.sqrt(actual.reduce((s,a,i)=>s+(a-preds[i])**2,0)/n);
+  const mean=actual.reduce((s,a)=>s+a,0)/n,ssTot=actual.reduce((s,a)=>s+(a-mean)**2,0);
+  return{mae,rmse,r2:1-actual.reduce((s,a,i)=>s+(a-preds[i])**2,0)/ssTot};
+}
+const cv=document.getElementById('c'),ctx=cv.getContext('2d');
+const W=700,H=300,pad=48,mn=50,mx=550;
+function tx(v){return pad+(v-mn)/(mx-mn)*(W-2*pad)}
+function ty(v){return H-pad-(v-mn)/(mx-mn)*(H-2*pad)}
+function draw(preds){
+  ctx.clearRect(0,0,W,H);
+  ctx.strokeStyle='#1e2d45';ctx.lineWidth=1;
+  [100,200,300,400,500].forEach(v=>{
+    ctx.beginPath();ctx.moveTo(tx(v),ty(mn));ctx.lineTo(tx(v),ty(mx));ctx.stroke();
+    ctx.beginPath();ctx.moveTo(tx(mn),ty(v));ctx.lineTo(tx(mx),ty(v));ctx.stroke();
+  });
+  ctx.strokeStyle='rgba(34,197,94,0.35)';ctx.lineWidth=1.5;ctx.setLineDash([5,4]);
+  ctx.beginPath();ctx.moveTo(tx(mn),ty(mn));ctx.lineTo(tx(mx),ty(mx));ctx.stroke();ctx.setLineDash([]);
+  ctx.fillStyle='rgba(34,197,94,0.5)';ctx.font='11px sans-serif';ctx.textAlign='start';
+  ctx.fillText('perfect predictions',tx(180),ty(180)-7);
+  preds.forEach((p,i)=>{
+    ctx.strokeStyle='rgba(239,68,68,0.25)';ctx.lineWidth=1;ctx.setLineDash([2,2]);
+    ctx.beginPath();ctx.moveTo(tx(p),ty(actual[i]));ctx.lineTo(tx(actual[i]),ty(actual[i]));ctx.stroke();ctx.setLineDash([]);
+  });
+  preds.forEach((p,i)=>{
+    ctx.beginPath();ctx.arc(tx(p),ty(actual[i]),5.5,0,Math.PI*2);
+    ctx.fillStyle='#60a5fa';ctx.fill();ctx.strokeStyle='#1d4ed8';ctx.lineWidth=1;ctx.stroke();
+  });
+  ctx.fillStyle='#475569';ctx.font='11px sans-serif';ctx.textAlign='center';
+  [100,200,300,400,500].forEach(v=>ctx.fillText(v,tx(v),H-8));
+  ctx.textAlign='right';
+  [100,200,300,400,500].forEach(v=>ctx.fillText(v,pad-6,ty(v)+4));
+  ctx.textAlign='center';ctx.font='12px sans-serif';
+  ctx.fillText('Predicted price ($k)',W/2,H+2);
+  ctx.save();ctx.translate(14,H/2);ctx.rotate(-Math.PI/2);ctx.fillText('Actual price ($k)',0,0);ctx.restore();
+}
+function show(key,btn){
+  document.querySelectorAll('.tabs button').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  const preds=models[key].preds,{mae,rmse,r2}=metrics(preds);
+  const r2c=r2>0.9?'#34d399':r2>0.5?'#fbbf24':'#f87171';
+  document.getElementById('cards').innerHTML=`
+    <div class="card"><div class="card-label">R²</div><div class="card-val" style="color:${r2c}">${r2.toFixed(3)}</div><div class="card-sub">1.0 = perfect, 0 = useless</div></div>
+    <div class="card"><div class="card-label">MAE</div><div class="card-val">${mae.toFixed(1)}k</div><div class="card-sub">avg absolute error</div></div>
+    <div class="card"><div class="card-label">RMSE</div><div class="card-val">${rmse.toFixed(1)}k</div><div class="card-sub">penalises large errors more</div></div>`;
+  document.getElementById('insight').textContent=models[key].insight;
+  draw(preds);
+}
+show('good',document.querySelector('.tabs button'));
+</script>
+</body>
+</html>
